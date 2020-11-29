@@ -1,7 +1,7 @@
 #include <ArduinoModbus.h>
 #include <Arduino.h>
 #include <EEPROM.h>
-#include "functions.h"
+#include "miscellaneous.h"
 #include "InputOutputAssignments.h"
 #include <PID_v1.h>
 #include <Filter.h>
@@ -141,9 +141,7 @@ class Chamber
     //Activador alarma
     bool alarmOn = 0;
  
-    //Fornulas del sistema
-
-    double formulaInyecionInicial();
+    
 
 
 
@@ -156,23 +154,42 @@ class Chamber
             int &holdingRegisterPerChamber);
     init(int *timerAlarmNoVentilationPointer,int *timerOpenDoorTimeAlarm1Pointer,int *timerOpenDoorTimeAlarm2Pointer);
     writeToEeprom();
+
+    //Control de temperatura
     temperatureControl();
+    readTemp();
+
+    //Control PID de Humedad
     humidityControl(int* humidityInyectionTimesPointer,
                     bool* humidityInyectionStatusPointer);
+    
+    readHumidity();
+
+    //Control PID de ethyleneControl
     ethyleneControl(int* ethyleneInyectionTimesPointer,
                     bool* ethyleneInyectionStatusPointer);
-    CO2Control(int* timerInitializationFanPointer);
-    ethyleneFlowRateControl();
-    readTemp();
-    readHumidity();
+    
     readEthylene();
+
+    //Control PID CO2         
+    CO2Control(int* timerInitializationFanPointer);
     readCO2();
+
+    //Control PID de ethyleneFlowRateControl
+    ethyleneFlowRateControl();    
     readEthyleneFlowRate();
+
+    //Lectura de las entradas
     readOutputFan1();
     readOutputFan2();
+
+    //mediciones
     getMeasurements();
     getRawValues1();
+    //Escritura de los Valores Analogicos
     writeAnalogValues();
+    
+    //Control de alarmas
     alarms(int* timerGoOffAlarmTemperaturePointer, 
            int* timerGoOffAlarmHumidityPointer, 
            int* timerGoOffAlarmEthylenePointer, 

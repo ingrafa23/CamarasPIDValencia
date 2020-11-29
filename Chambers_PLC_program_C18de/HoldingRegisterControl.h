@@ -1,7 +1,26 @@
-#ifndef  CONST_CONTROL_H
-#define CONST_CONTROL_H
+#ifndef  HOLDING_REGISTER_CONTROL_H 
+#define HOLDING_REGISTER_CONTROL_H
 
 ////---------------------------------------------------------------------------------
+
+//Macros asociadas al los holdregister del control PID
+
+//Constantes PID ETHYLENE CONTROL
+  #define KP_ETHYLENE_PID   _modbusTCPServer->holdingRegisterRead(addressOffset + 55)
+  #define KI_ETHYLENE_PID   _modbusTCPServer->holdingRegisterRead(addressOffset + 56) / 1000.0
+  #define KD_ETHYLENE_PID   _modbusTCPServer->holdingRegisterRead(addressOffset + 57)
+
+// Constantes ETHYLENE FLOW PID CONTROL
+  #define KP_ETHYLENE_FLOW_PID   _modbusTCPServer->holdingRegisterRead(addressOffset + 161)
+  #define KI_ETHYLENE_FLOW_PID   _modbusTCPServer->holdingRegisterRead(addressOffset + 162) / 1000
+  #define KD_ETHYLENE_FLOW_PID   _modbusTCPServer->holdingRegisterRead(addressOffset + 163)
+
+// contantes del PID CO2
+  #define KP_CO2_PID    (double)_modbusTCPServer->holdingRegisterRead(addressOffset + 52) / 1.0
+  #define KI_CO2_PID    (double)_modbusTCPServer->holdingRegisterRead(addressOffset + 53) / 10.0
+  #define KD_CO2_PID    (double)_modbusTCPServer->holdingRegisterRead(addressOffset + 54) / 1.0
+  
+
 // Macros asosiadas al holdregister para el sistema de control forzado
 // fan 
 #define FORCED_SAFETY_RELAY_RESET               0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 0)

@@ -1,6 +1,6 @@
 #include <Ethernet.h>
 #include <ArduinoModbus.h>
-#include "functions.h"
+#include "miscellaneous.h"
 #include "controlChambers.h"
 #include "variablesAlarm.h"
 #include "variablestimer.h"
