@@ -46,21 +46,75 @@
 #define ENABLE_CONTROL_TEMPERATURE_AEROTERMO      1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 1)
 #define ENABLE_CONTROL_HUMIDITY                   1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 2)
 #define ENABLE_CONTROL_CO2                        1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 3)
-#define ENABLE_CONROL_C2H4                        1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 4)
-#define ENABLE_CONROL_C2H4_FLOW                   1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 5)
+#define ENABLE_ETHYLENE                           1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 4)
+#define ENABLE_ETHYLENE_FLOW                      1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 5)
 #define ENABLE_CONTROL_CO2_ON_OFF                 1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 6)
 #define ENABLE_CONTROL_CO2_PID                    1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 7)
 
 
-// Macros asosiadas al holdregister  inicio de ciclo en balance de gaces -  modo mantenimineto
+// Macros asociadas al holdregister  inicio de ciclo en balance de gaces -  modo mantenimineto
 #define INICIO_CICLO_MODO_MANTENIMIENTO             1  //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 338, 7)
 #define START2                                      _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 2)
 #define CLEAR_FINAL_INJECTION_MESSAGE_ACTIVATED     _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 4)
 #define CLEAR_FANOUT_ACTIVATED                      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1)
 
+// Macros asociadas al holdregister para verificar si las entradas o salidas estan HABILITADAS 
+#define ENABLE_SAFETY_RELAY_RESET           _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 17)
+#define ENABLE_INPUT_FAN_1                  _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 5)
+#define ENABLE_OUTPUT_FAN_1                 _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 6)
+#define ENABLE_INPUT_FAN_2                  _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 7)
+#define ENABLE_OUTPUT_FAN_2                 _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 8)
+#define ENABLE_AEROHEATERS                  _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 2)
+#define ENABLE_HUMIDITY_WATER_VALVES        _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 3)
+#define ENABLE_HUMIDITY_AIR_VALVES          _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 14)
+#define ENABLE_COOLING_REQUEST              _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 9)
+#define ENABLE_HEATING_REQUEST              _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 10)  
+#define ENABLE_CONTROL_COOLING_REQUEST      _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 11)
+#define ENABLE_CONTROL_HEATING_REQUEST      _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 12)
+#define ENABLE_EVAPORATOR_FAN_ACTIVATOR     _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 1)
+#define ENABLE_ALARM_SET                    _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 0)
+
+#define ENABLE_AUTO_TEL_SELECTOR            _modbusTCPServer->holdingRegisterReadBit(addressOffset + 256, 10)
+
+
+
+struct strHoldingRegisterControlEnable
+{
+  unsigned char enable_safety_relay_reset;           
+  unsigned char enable_input_fan_1;                  
+  unsigned char enable_output_fan_1;                
+  unsigned char enable_input_fan_2;                
+  unsigned char enable_output_fan_2;               
+  unsigned char enable_aeroheaters;              
+  unsigned char enable_humidity_water_valves;      
+  unsigned char enable_humidity_air_valves;    
+  unsigned char enable_cooling_request;    
+  unsigned char enable_heating_request;    
+  unsigned char enable_control_cooling_request; 
+  unsigned char enable_control_heating_request; 
+  unsigned char enable_evaporator_fan_activator;
+  unsigned char enable_ethylene;
+  unsigned char enable_auto_tel_selector;
+};
+
+extern struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
+
+//-----------------------------------------------------------------------
+
+
+//#define EMERGENCY_STOP I0_0
+#define DOOR_1_OPEN_DETECT I0_2
+#define DOOR_2_OPEN_DETECT 0
+#define AUTO_TEL_SELECTOR I0_3
+
+
+
 //Definicion de contantes de las formulas
 //Inyecion inicial 
 #define REF_C2H4                _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18)
 #define CHAMBER_VOLUMEN         _modbusTCPServer->holdingRegisterRead(addressOffset + 10)
+
+
+
 
 #endif

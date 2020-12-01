@@ -4,6 +4,7 @@
 #include "controlChambers.h"
 #include "variablesAlarm.h"
 #include "variablestimer.h"
+#include "consoladebug.h"
 
 
 #define GENERAL_SWITCH_DETEC  I1_4  //Detección de interruptor principal
@@ -95,6 +96,11 @@ int *timerOpenDoorTimeAlarm2Pointer = &timerOpenDoorTimeAlarm2;
 
 int delayConnection;
 
+//Variable y funcion de micro corte
+unsigned char flagAttacMicroCuts = 0;
+unsigned char *flagAttacMicroCutsPointer = &flagAttacMicroCuts;
+void attacMicroCuts();
+
 Chamber chamber1(0,
                  &modbusTCPServer,
                  &analogInputModule1Client,
@@ -139,12 +145,14 @@ void setup() {
 
   configureTimer5();
 
-  attachInterrupt(digitalPinToInterrupt(MICRO_CUTS_DETECTION), microCuts, FALLING);
+  attachInterrupt(digitalPinToInterrupt(MICRO_CUTS_DETECTION), attacMicroCuts, CHANGE);
 
   
   chamber1.init(timerAlarmNoVentilationPointer,
                   timerOpenDoorTimeAlarm1Pointer,
                   timerOpenDoorTimeAlarm2Pointer);
+  
+  chamber1.setupSafetyRelayReset();
 
 }
 
@@ -154,6 +162,11 @@ void loop() {
 
   //Serial.print("Timer etileno : "); Serial.println(*(ethyleneInyectionTimesPointer + *ethyleneInyectionStatusPointer));
   
+  //Atiende la interrupcion de MicroCuts
+  chamber1.atiendeMicroCutsInterrup(&flagAttacMicroCutsPointer); 
+  //----------------------
+  chamber1.atiendeGeneralSwitchDetect();
+  //---------------------------
 
   EthernetClient client = server.available();
 
@@ -255,21 +268,25 @@ void loop() {
   {
     //enable control
     chamber1.enableControl();
+    //enable Input Output
+    chamber1.enableInputOutput();
     //forced control
     chamber1.forcedControl();
     
     chamber1.writeAnalogValues();
+    //Zeta de Emergencia
+    chamber1.zetaEmergency();
   }
-  
-
+  //Funcion que ejecuta los comandos recibido del interprete o cosola debug
+  tareaMainInterprete();
+  //Ejecuta el interprete de las acciones de los comados
+  interpreteEjecuta()
 }
 
-void microCuts()
+//Interrupcion del pin MICRO_CUTS_DETECTION
+void attacMicroCuts()
 {
-  if (!digitalRead(GENERAL_SWITCH_DETEC))
-  {
-    setBitEeprom(0, 3); // Seteamos el bit en eeprom para dejar constancia del microcorte
-  }
+  flagAttacMicroCuts = 1;
 }
 
 ISR(TIMER5_OVF_vect)
@@ -417,14 +434,25 @@ ISR(TIMER5_OVF_vect)
     }
 
   }
-  
-  
-  
 
+  //variables del timer atiende a general switch detect
 
+  if (timerMicroCut.timer10 > 0)
+  {
+    timerMicroCut.timer10--;
+  }
 
+  if (timerMicroCut.timer03 > 0)
+  {
+    timerMicroCut.timer03--;
+  }
+
+  //-----------------------------------------------
   
 
   TCNT5H = 0xC2;
   TCNT5L = 0xF7;
 }
+
+
+

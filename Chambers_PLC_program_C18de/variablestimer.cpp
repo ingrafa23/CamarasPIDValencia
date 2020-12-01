@@ -1,6 +1,7 @@
 #include "variablestimer.h"
 
 structTimer timerInyectionEthyleneFlow;
+struct structTimer timerMicroCut = {0,0,0,0};
 
 void setTimerIntEthyleneFlow(unsigned long v){
     timerInyectionEthyleneFlow.timerInit = v;

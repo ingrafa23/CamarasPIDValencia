@@ -5,6 +5,7 @@
 #include "variablestimer.h"
 #include "InputOutputAssignments.h"
 #include "miscellaneous.h"
+#include "consoladebug.h"
 
 unsigned long lastValueInputFan1;
 unsigned long lastValueOutputFan1;
@@ -20,7 +21,7 @@ unsigned int lastTimeGases = 0;
 unsigned int TimeGases;
 
 
-
+struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
 
 struct StructValidationPID  ValidationPIDFlowethylene, ValidationPIDControlethylene, ValidationPIDCO2;
 
@@ -456,10 +457,13 @@ Chamber::humidityControl(int *humidityInyectionTimesPointer, bool *humidityInyec
       humidityPID->Compute();
 
       
-
       humidityCycleTOn = (int)humidityPIDOutput;
       humidityCycleTOff = _modbusTCPServer->holdingRegisterRead(addressOffset + 139) -
                           (int)humidityPIDOutput;
+
+      //------Funcion que ejecuta si esta activo el debuger----------
+      debugControlHumidity();
+      //----------------
       
       if (pidCycleControlHumidity == 1 && humidityPIDOutput >= 2)
       {
@@ -569,9 +573,12 @@ Chamber::ethyleneControl(int *ethyleneInyectionTimesPointer, bool *ethyleneInyec
               _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
               
             }
-            Serial.print("ethyleneSetpoint : "); Serial.println(ethyleneSetpoint);
-            Serial.print("Sensor C2H4 : "); Serial.println(calculatedSensorValues[2]);
-            Serial.print("Salida PID ethyleneControl: "); Serial.println(analogOutputModule1Values[2]);
+
+            //------Funcion que ejecuta si esta activo el debuger----------
+            debugControlEthylene();
+            //----------------
+
+            
 
 
 
@@ -687,7 +694,7 @@ Chamber::CO2Control(int *timerInitializationFanPointer)
         ValidationPIDCO2.valor = CO2PIDOutput;
         ValidationPID(&ValidationPIDCO2, PID_CO2_CONTROL_MIN);
         
-        Serial.print("ValidationPIDCO2.flag : "); Serial.println(ValidationPIDCO2.flag);
+        
 
         if (ValidationPIDCO2.flag)
         {
@@ -696,11 +703,10 @@ Chamber::CO2Control(int *timerInitializationFanPointer)
           _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
           
         }
-        Serial.print("CO2_Setpoint : "); Serial.println(CO2Setpoint);
-        Serial.print("Sensor CO2 V1 : "); Serial.println(analogOutputModule1Values[0] );
-        Serial.print("Sensor CO2 V2 : "); Serial.println(analogOutputModule1Values[0] );
-
-        Serial.print("Salida PID CO2_Control: "); Serial.println(CO2PIDOutput);
+        
+        //------Funcion que ejecuta si esta activo el debuger----------
+        debugControlCo2();
+        //------------------------------------------------------------
 
         
       }
@@ -1451,8 +1457,12 @@ void Chamber::modoDesverdizacion()
           _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 1);
           
           desiredEthyleneFlowRate += baseEthyleneFlowRate; 
-          Serial.print("Modo Desverdizacion :"); Serial.println(estadoModoDesverdizacion);
           
+          //---------------
+          
+          //Esto genera una orden para que se imprime en el debug
+          //Serial.print("Modo Desverdizacion :"); Serial.println(estadoModoDesverdizacion);
+          debugEstadoModoDesverdizacion = MODO_DESVERDIZACION;
           
          
         }
@@ -1460,25 +1470,35 @@ void Chamber::modoDesverdizacion()
         switch (estadoModoDesverdizacion)
         {
         case MODO_INYECCION_INICIAL:          
-          Serial.println("Ejecutando MODO_INYECCION_INICIAL");
-          Serial.print("desiredEthyleneFlowRate :"); Serial.println(String(desiredEthyleneFlowRate, 4));
+          
+          //Serial.print("desiredEthyleneFlowRate :"); Serial.println(String(desiredEthyleneFlowRate, 4));
           if(getTimerIntEthyleneFlow()==0){
             estadoModoDesverdizacion = MODO_INYECCION_MANTENIMIENTO;
             //Iniciamos inyeccion por mantenimiento
             _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 2); 
             _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 4);
-            Serial.print("Pasa a Modo Desverdizacion :"); Serial.println(estadoModoDesverdizacion);
-          } 
+            //Serial.print("Pasa a Modo Desverdizacion :"); Serial.println(estadoModoDesverdizacion);
+          }
+
+         
+          //Esto genera una orden para que se imprime en el debug
+           //Serial.println("Ejecutando MODO_INYECCION_INICIAL");
+          debugEstadoModoDesverdizacion = MODO_INYECCION_INICIAL; 
           
           break;
 
         case MODO_INYECCION_MANTENIMIENTO:
-        Serial.println("Ejecutando MODO_INYECCION_MANTENIMIENTO");
+        
+          
+          //Esto genera una orden para que se imprime en el debug
+          //Serial.println("Ejecutando MODO_INYECCION_MANTENIMIENTO");
+          debugEstadoModoDesverdizacion = MODO_INYECCION_MANTENIMIENTO; 
+
           if(INICIO_CICLO_MODO_MANTENIMIENTO){
-            Serial.println("HolRegister 338,7 == True");
+            
             if(!START2)
             {
-              Serial.println("HolRegister 0,2 == True");
+              
               CLEAR_FINAL_INJECTION_MESSAGE_ACTIVATED;
               desiredEthyleneFlowRate = 0;
               CLEAR_FANOUT_ACTIVATED;
@@ -1500,13 +1520,10 @@ void Chamber::modoDesverdizacion()
         //Serial.print("Entrada valueEthyleneFlowNormalization : "); Serial.println(valueEthyleneFlowNormalization);
         //Serial.print("valueEthyleneFlowSetpointNormalization  :"); Serial.println(valueEthyleneFlowSetpointNormalization);
         
-        Serial.println("Aplicando PID");
+        
         ethyleneFlowPID->SetMode(AUTOMATIC);
         ethyleneFlowPID->SetTunings(KP_ETHYLENE_FLOW_PID,KI_ETHYLENE_FLOW_PID,KD_ETHYLENE_FLOW_PID);
         ethyleneFlowPID->Compute();
-        Serial.print("desiredEthyleneFlowRate  :");Serial.println(String(desiredEthyleneFlowRate, 4));
-        Serial.print("LEctura Sensor Ethylene Flow  :"); Serial.println(calculatedSensorValues[4]);
-        Serial.print("PID ethyleneFlowPIDOutput : ");Serial.println(ethyleneFlowPIDOutput);
         analogOutputModule1Values[2] = ethyleneFlowPIDOutput;
 
         ValidationPIDFlowethylene.valor = ethyleneFlowPIDOutput;
@@ -1516,6 +1533,10 @@ void Chamber::modoDesverdizacion()
         {
           analogOutputModule1Values[2] = ETHYLENE__FLOW_PID_LIMIT_CLOSE;
         }
+
+         //------Funcion que ejecuta si esta activo el debuger----------
+        debugControlEthyleneFlow();
+        //------------------------------------------------------------
 
         
         
@@ -1731,7 +1752,7 @@ void Chamber::enableControl(){
   }
 
   //ENABLE ETHYLENE
-  if (ENABLE_CONROL_C2H4)
+  if (ENABLE_ETHYLENE)
   {
     flagEnableControlSystemEthylene = 1;
   }
@@ -1783,7 +1804,7 @@ void Chamber::enableControl(){
   
 
   //ENABLE ETHYLENE
-  if (ENABLE_CONROL_C2H4)
+  if (ENABLE_ETHYLENE)
   {
     flagEnableControlSystemEthylene = 1;
   }
@@ -1793,7 +1814,7 @@ void Chamber::enableControl(){
   }
 
   //ENABLE ETHYLENE FLOW
-  if (ENABLE_CONROL_C2H4_FLOW)
+  if (ENABLE_ETHYLENE_FLOW)
   {
     flagEnableControlSystemEthyleneFlow = 1;
   }
@@ -1801,7 +1822,83 @@ void Chamber::enableControl(){
   {
     flagEnableControlSystemEthyleneFlow = 0;
   }
+
+  if (ENABLE_AUTO_TEL_SELECTOR)
+  {
+  }
+
   
+  
+
+}
+
+/**
+ * @brief enableInputOutput verifica los estado del holdregister, para habilitar las entradas y salidas del sistema
+*/
+
+void Chamber::enableInputOutput(){
+
+  if(!ENABLE_SAFETY_RELAY_RESET){
+    
+  }
+
+  if(!ENABLE_INPUT_FAN_1){
+    digitalWrite(INPUT_FAN_1, LOW);
+    analogOutputModule1Values[0] = 4000;
+  }
+
+  if(!ENABLE_OUTPUT_FAN_1){
+    digitalWrite(OUTPUT_FAN_1, LOW);
+    analogOutputModule1Values[0] = 4000;
+  }
+
+  if(!ENABLE_INPUT_FAN_2){
+    digitalWrite(INPUT_FAN_2, LOW);
+    analogOutputModule1Values[1] = 4000;
+  }
+
+  if(!ENABLE_OUTPUT_FAN_2){
+    digitalWrite(OUTPUT_FAN_2, LOW);
+    analogOutputModule1Values[1] = 4000;
+  }
+
+  if(!ENABLE_AEROHEATERS){
+    digitalWrite(AEROHEATERS, LOW);
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 259);
+  }
+
+  if(!ENABLE_HUMIDITY_WATER_VALVES){
+    digitalWrite(HUMIDITY_WATER_VALVES, LOW);
+  }
+
+  if(!ENABLE_HUMIDITY_AIR_VALVES){
+    
+  }
+
+  if(!ENABLE_COOLING_REQUEST){
+    digitalWrite(COOLING_REQUEST, LOW);
+  }
+
+  if(!ENABLE_HEATING_REQUEST){
+    digitalWrite(HEATING_REQUEST, LOW);
+  }
+
+  if(!ENABLE_CONTROL_COOLING_REQUEST){
+    digitalWrite(CONTROL_COOLING_REQUEST, LOW);
+  }
+
+  if(!ENABLE_CONTROL_HEATING_REQUEST){
+    digitalWrite(CONTROL_HEATING_REQUEST, LOW);
+  }
+
+  if(!ENABLE_EVAPORATOR_FAN_ACTIVATOR){
+    digitalWrite(EVAPORATOR_FAN_ACTIVATOR, LOW);
+  }
+
+  if(!ENABLE_ALARM_SET){
+    digitalWrite(ALARM_SET, LOW);
+  }
+
 
 }
 
@@ -1850,6 +1947,7 @@ void Chamber::forcedControl()
   {
     //condition
     digitalWrite(AEROHEATERS, HIGH);
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 259);
   }
   
   if (FORCED_HUMIDITY_WATER_VALVES)
@@ -1868,7 +1966,7 @@ void Chamber::forcedControl()
   } 
 
   if(FORCED_CONTROL_COOLING_REQUEST){
-    digitalWrite(CONTROL_HEATING_REQUEST, HIGH);
+    digitalWrite(CONTROL_COOLING_REQUEST, HIGH);
 
   }   
 
@@ -1894,8 +1992,206 @@ void Chamber::forcedControl()
   
 }
 
+//funciones privadas para hacer debuggear en cada uno de los sistemas de control
+
+/* Funciones privadas creadas para debugear cada una de las variables
+ que se estan muestreando en la camara tal como humedad, flujo de humedad, temperatura, co2 y c2h4
+*/
+
+/* funcion para debugear el control de humedad */
+void Chamber::debugControlHumidity(){
+  if (debugConsole.humidity)
+    {
+      unsigned long timeCosoleIn = millis() - debugLastTime.humidity;
+      if (timeCosoleIn > 1000) //para que se imprima cada 1000ms
+      {
+        debugLastTime.humidity = millis();
+        //--------------aca se imprime todo lo que quiera
+      }
+    }
+}
+
+/* funcion para debugear el control de etileno */
+void Chamber::debugControlEthylene(){
+
+  if (debugConsole.ethylene)
+    {
+      unsigned long timeCosoleIn = millis() - debugLastTime.ethylene;
+      if (timeCosoleIn > 1000) //para que se imprima cada 1000ms
+      {
+        debugLastTime.ethylene = millis();
+        //--------------aca se imprime todo lo que quiera
+        Serial.println("-------Console Ethylene-----------------------------------------");
+        Serial.print("ethyleneSetpoint : "); Serial.println(ethyleneSetpoint);
+        Serial.print("Entrada Sensor C2H4 : "); Serial.println(calculatedSensorValues[2]);
+        Serial.print("Salida PID ethyleneControl: "); Serial.println(analogOutputModule1Values[2]);
+        Serial.println("-------________________-----------------------------------------");
+      }
+    }
+}
+
+/* funcion para debugear el control del flujo de etileno */
+void Chamber::debugControlEthyleneFlow(){
+  if (debugConsole.ethyleneflow)
+  {
+    unsigned long timeConsoleIn = millis();
+    if(timeConsoleIn>1000){//para que se imprima cada 1000ms
+      
+      switch (debugEstadoModoDesverdizacion)
+      {
+      case MODO_INYECCION_INICIAL:
+        Serial.println("Ejecutando MODO_INYECCION_INICIAL");
+        break;
+      
+      case MODO_INYECCION_MANTENIMIENTO:
+        Serial.println("Ejecutando MODO_INYECCION_MANTENIMIENTO");
+        break;
+      
+      case MODO_DESVERDIZACION:
+        Serial.print("Modo Desverdizacion :"); Serial.println(estadoModoDesverdizacion);
+        break;
+      
+      default:
+        break;
+      }
+
+      //--------------aca se imprime todo lo que quiera
+      Serial.println("-------Console Ethylene Flow -------------------------------------");
+      Serial.print("desiredEthyleneFlowRate  :");Serial.println(String(desiredEthyleneFlowRate, 4));
+      Serial.print("Lectura Sensor Ethylene Flow  :"); Serial.println(calculatedSensorValues[4]);
+      Serial.print("PID ethyleneFlowPIDOutput : ");Serial.println(ethyleneFlowPIDOutput);
+      Serial.println("-------________________------------------------------------------");
+    }    
+  }
+}
+
+/* funcion para debugear el control de co2 */
+void Chamber::debugControlCo2(){
+  if (debugConsole.co2)
+  {
+    unsigned long timeConsoleIn = millis();
+    if(timeConsoleIn>1000){//para que se imprima cada 1000ms
+      //--------------aca se imprime todo lo que quiera
+      Serial.println("-------Console CO2 -------------------------------------");
+      Serial.print("ValidationPIDCO2.flag : "); Serial.println(ValidationPIDCO2.flag);
+      Serial.print("CO2_Setpoint : "); Serial.println(CO2Setpoint);
+      Serial.print("Sensor CO2 V1 : "); Serial.println(analogOutputModule1Values[0] );
+      Serial.print("Sensor CO2 V2 : "); Serial.println(analogOutputModule1Values[1] );
+      Serial.print("Salida PID CO2_Control: "); Serial.println(CO2PIDOutput);
+      Serial.println("-------________________--------------------------------");
+    }   
+  }
+}
+
+/* funcion para debugear el control de temperatura */
+void Chamber::debugControlTemp(){
+  if (debugConsole.temperature)
+  {
+    unsigned long timeConsoleIn = millis();
+    if(timeConsoleIn>1000){//para que se imprima cada 1000ms
+      //--------------aca se imprime todo lo que quiera
+      Serial.println("-------Console temperature -----------------------------");
+      Serial.print("Sensor temperature value : "); Serial.println(calculatedSensorValues[0]);
+      Serial.print("Threshold heating activator : "); Serial.println(_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) -
+                                                                     _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 22)) &&
+                                                                     digitalRead(EXT_HEATER_AVAILABLE)));
+      Serial.print("Heating activation : "); Serial.println(HEATING_REQUEST);
+      Serial.print("Threshold cooling activator : "); Serial.println(_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) +
+                                                                     _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 24)) &&
+                                                                     digitalRead(EXT_COOLER_AVAILABLE))
+      Serial.print("Cooling activation : "); Serial.println(COOLING_REQUEST);       
+      Serial.println("-------________________---------------------------------");
+    }
+  }
+}
+
+//Zeta de emergencia
+
+void zetaEmergency(){
+  if (digitalRead(EMERGENCY_STOP)){
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 0);
+  } 
+  else{
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 0);
+  }
+}
 
 
+//micro cortes
+
+void Chamber::atiendeMicroCutsInterrup(unsigend char *mflagMicroCutsPointer){
+  
+  if (*mflagMicroCutsPointer)
+  {
+    if (digitalRead(MICRO_CUTS_DETECTION))
+    {
+      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 3);
+    }
+    else
+    {
+      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 3);
+    }
+      *mflagMicroCutsPointer = 0;
+    }
+  
+  
+}
+
+void Chamber::atiendeGeneralSwitchDetect(void){
+
+  if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 3)){
+    if(digitalRead(GENERAL_SWITCH_DETEC)){
+      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 0);
+      // se limpia el 0,3
+      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 3);
+    }
+    else{
+
+      if (timerMicroCut.flag10 == 0)
+      {
+        timerMicroCut.timer10 = 10;
+        timerMicroCut.flag10 = 1;
+      }
+      else
+      {
+        if (timerMicroCut.timer10 == 0)
+        {
+          if (timerMicroCut.flag03 == 0)
+          {
+            timerMicroCut.timer03 = 3;
+            timerMicroCut.flag03 = 1;
+          }
+          else
+          {
+            if(timerMicroCut.timer03 > 0){
+              digitalWrite(SAFETY_RELAY_RESET,HIGH);
+            }
+            else
+            {
+              digitalWrite(SAFETY_RELAY_RESET,LOW);
+              timerMicroCut = {0,0,0,0};
+              // se limpia el 0,3
+              _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 3);
+            }
+          }
+        }
+        
+      }
+
+}
+
+void Chamber::setupSafetyRelayReset(void){
+  if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 3))
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 3);
+    digitalWrite(SAFETY_RELAY_RESET, HIGH);
+    delay(1000);
+    digitalWrite(SAFETY_RELAY_RESET,LOW);
+	  _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 3);
+    
+  }
+
+}
 
 Chamber::~Chamber(){
   

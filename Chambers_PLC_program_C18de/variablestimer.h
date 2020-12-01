@@ -20,8 +20,16 @@ struct structTimer
 } ;
 
 
+struct structMicroCut
+{
+    unsigned long timer10;
+    unsigned long timer03;
+    unsigned char flag10;
+    unsigned char flag03;
+} ;
 
-extern structTimer timerInyectionEthyleneFlow;
+extern struct structMicroCut timerMicroCut;
+extern struct structTimer timerInyectionEthyleneFlow;
 
 extern void setTimerIntEthyleneFlow(unsigned long v);
 extern void setTimerOnDoor01EthyleneFlow(unsigned long v);

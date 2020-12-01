@@ -7,16 +7,21 @@
 #include <Filter.h>
 
 //Definiciones de modo del Etileno
-#define MODO_INYECCION_INICIAL 0
-#define MODO_INYECCION_MANTENIMIENTO 1
+#define MODO_INYECCION_INICIAL        1
+#define MODO_INYECCION_MANTENIMIENTO  2
+#define MODO_DESVERDIZACION           3
 
 
 class Chamber
 {
   private:
+
+  //Estado del modo de desverdozacion-conservasion
     //-------------------------------------------------
     unsigned char estadoModoDesverdizacion;
     //-------------------------------------------------
+
+    
     ModbusTCPServer* _modbusTCPServer;
     ModbusTCPClient* _modbusTCPClient1;
     ModbusTCPClient* _modbusTCPClient2;
@@ -138,9 +143,20 @@ class Chamber
 
 
 
+
+
     //Activador alarma
     bool alarmOn = 0;
- 
+
+    
+
+    //funciones privadas para hacer debuggear en cada uno de los sistemas de control
+    unsigned char debugEstadoModoDesverdizacion
+    void debugControlHumidity();
+    void debugControlEthylene();
+    void debugControlEthyleneFlow();
+    void debugControlCo2();
+    void debugControlTemp();
     
 
 
@@ -205,8 +221,23 @@ class Chamber
     //Metodo de forzado para las salidas de Humedad, CO2 y Ethylene
     void forcedControl();
     //Metodo para habilitar el sistema de control de humedad, CO2 y etileno
-    void enableControl();    
+    void enableControl(); 
+
+    void enableInputOutput();
+
     bool getStateAutoTelSelectorBlocker();
+
+    //Zeta de emergencia
+
+    void zetaEmergency();
+
+    // funcion que atiende y envia la interrupccion del microcut para la asignacion de un clear o un set del h_r 0,3
+
+    void atiendeMicroCutsInterrup(unsigend char *mflagMicroCutsPointer);
+
+    void atiendeGeneralSwitchDetect(void);
+
+    void setupSafetyRelayReset(void);
     
     ~Chamber(void);
 
