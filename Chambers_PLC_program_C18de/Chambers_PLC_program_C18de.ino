@@ -5,11 +5,9 @@
 #include "variablesAlarm.h"
 #include "variablestimer.h"
 #include "consoladebug.h"
+#include "InputOutputAssignments.h"
 
 
-#define GENERAL_SWITCH_DETEC  I1_4  //Detección de interruptor principal
-#define MICRO_CUTS_DETECTION  I1_5  //Entrada relé para la detección de microcortes
-#define EMERGENCY_STOP        I1_6  //Entrada relé emergencia      
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
@@ -97,9 +95,11 @@ int *timerOpenDoorTimeAlarm2Pointer = &timerOpenDoorTimeAlarm2;
 int delayConnection;
 
 //Variable y funcion de micro corte
+//------>Tarea 5
 unsigned char flagAttacMicroCuts = 0;
 unsigned char *flagAttacMicroCutsPointer = &flagAttacMicroCuts;
 void attacMicroCuts();
+//-------------------------------
 
 Chamber chamber1(0,
                  &modbusTCPServer,
@@ -145,6 +145,8 @@ void setup() {
 
   configureTimer5();
 
+  //------>Tarea 5
+  //------->  Interrupcion por cambio de estado de pines
   attachInterrupt(digitalPinToInterrupt(MICRO_CUTS_DETECTION), attacMicroCuts, CHANGE);
 
   
@@ -152,6 +154,7 @@ void setup() {
                   timerOpenDoorTimeAlarm1Pointer,
                   timerOpenDoorTimeAlarm2Pointer);
   
+  //---------> Tarea 5
   chamber1.setupSafetyRelayReset();
 
 }
@@ -162,9 +165,11 @@ void loop() {
 
   //Serial.print("Timer etileno : "); Serial.println(*(ethyleneInyectionTimesPointer + *ethyleneInyectionStatusPointer));
   
+  //------>Tarea 5
   //Atiende la interrupcion de MicroCuts
   chamber1.atiendeMicroCutsInterrup(&flagAttacMicroCutsPointer); 
   //----------------------
+  //---------> Tarea 5
   chamber1.atiendeGeneralSwitchDetect();
   //---------------------------
 
@@ -266,16 +271,21 @@ void loop() {
     }
   } else
   {
+    //-----> Tarea 2
     //enable control
     chamber1.enableControl();
     //enable Input Output
     chamber1.enableInputOutput();
     //forced control
+    //-----> Tarea 3
     chamber1.forcedControl();
     
     chamber1.writeAnalogValues();
     //Zeta de Emergencia
-    chamber1.zetaEmergency();
+    //-----> Tarea 4
+    chamber1.setaEmergency();
+
+
   }
   //Funcion que ejecuta los comandos recibido del interprete o cosola debug
   tareaMainInterprete();
@@ -284,6 +294,7 @@ void loop() {
 }
 
 //Interrupcion del pin MICRO_CUTS_DETECTION
+//--->Tarea 5
 void attacMicroCuts()
 {
   flagAttacMicroCuts = 1;

@@ -105,7 +105,7 @@ Chamber::Chamber(int chamber,
   filterCO2 = new AnalogFilter<100, 10>;
   filterEthyl = new AnalogFilter<100, 10>;
 
-  autoTelSelectorBlocker = false;
+  
 
 }
 
@@ -210,12 +210,11 @@ Chamber::writeToEeprom()
 Chamber::temperatureControl()
 {
 
-  bool a = digitalRead(AUTO_TEL_SELECTOR);
+  
 
           
-    a = 1;
   ///// Temperature external control selected /////
-  if (a &&
+  if (autoSelectorValue &&
       _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) &&
       alarmSensorTemp1 == false && alarmSensorTemp2 == false && 
       flagEnableControlSystemTemperatureExternal)
@@ -401,11 +400,8 @@ Chamber::temperatureControl()
 Chamber::humidityControl(int *humidityInyectionTimesPointer, bool *humidityInyectionStatusPointer)
 {
   /*BEGIN CONDITION ENABALE CONTROL SYSTEM HUMIDITY*/
-    bool a = digitalRead(AUTO_TEL_SELECTOR);
- 
-  a = 1;
     //Si la cámara está activa regula la humedad y si no desactiva las electroválvulas
-    if (a &&
+    if (autoSelectorValue &&
         !_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1) &&
         _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) &&
         alarmSensorHumidity1 == false && alarmSensorHumidity2 == false &&
@@ -1411,9 +1407,7 @@ Chamber::alarms(int *timerGoOffAlarmTemperaturePointer,
 
 }
 
-bool Chamber::getStateAutoTelSelectorBlocker(void) {
-return autoTelSelectorBlocker;
-}
+
 
 
 
@@ -1729,6 +1723,8 @@ void Chamber::modoConservacion()
 }
 /** @brief enableControl verifica los estado del holdregister, para activar el sistema de control de Humedad, Co2 y Ethyleno al maximo
 */
+
+//----> Tarea 2
 void Chamber::enableControl(){
   
   //ENABLE TEMPERATURE EXTERNAL
@@ -1823,10 +1819,7 @@ void Chamber::enableControl(){
     flagEnableControlSystemEthyleneFlow = 0;
   }
 
-  if (ENABLE_AUTO_TEL_SELECTOR)
-  {
-  }
-
+    
   
   
 
@@ -1835,11 +1828,11 @@ void Chamber::enableControl(){
 /**
  * @brief enableInputOutput verifica los estado del holdregister, para habilitar las entradas y salidas del sistema
 */
-
+//----> Tarea 2
 void Chamber::enableInputOutput(){
 
   if(!ENABLE_SAFETY_RELAY_RESET){
-    
+    digitalWrite(SAFETY_RELAY_RESET, LOW);
   }
 
   if(!ENABLE_INPUT_FAN_1){
@@ -1899,13 +1892,28 @@ void Chamber::enableInputOutput(){
     digitalWrite(ALARM_SET, LOW);
   }
 
+  if (!ENABLE_AUTOTEL_SELECTOR_HR)
+  {
+    autoSelectorValue = 0;
+  }
+  else
+  {
+    autoSelectorValue = 1;
+  }
+
+  // StateAutoTelSelector
+  this->stateAutoTelSelector();
+  
+
 
 }
+
+
 
 /**
  * @brief forcedControl verifica los estado del holdregister, para forza las salidas de Humedad, Co2 y Ethyleno al maximo
 */
-
+//----> Tarea 3
 void Chamber::forcedControl()
 {
 
@@ -2106,8 +2114,8 @@ void Chamber::debugControlTemp(){
 }
 
 //Zeta de emergencia
-
-void zetaEmergency(){
+//-----> Tarea 4
+void setaEmergency(){
   if (digitalRead(EMERGENCY_STOP)){
     _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 0);
   } 
@@ -2118,7 +2126,7 @@ void zetaEmergency(){
 
 
 //micro cortes
-
+//------>Tarea 5
 void Chamber::atiendeMicroCutsInterrup(unsigend char *mflagMicroCutsPointer){
   
   if (*mflagMicroCutsPointer)
@@ -2136,6 +2144,8 @@ void Chamber::atiendeMicroCutsInterrup(unsigend char *mflagMicroCutsPointer){
   
   
 }
+
+//---------> Tarea 5
 
 void Chamber::atiendeGeneralSwitchDetect(void){
 
@@ -2180,6 +2190,7 @@ void Chamber::atiendeGeneralSwitchDetect(void){
 
 }
 
+//---------> Tarea 5
 void Chamber::setupSafetyRelayReset(void){
   if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 3))
   {
@@ -2189,6 +2200,41 @@ void Chamber::setupSafetyRelayReset(void){
     digitalWrite(SAFETY_RELAY_RESET,LOW);
 	  _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 3);
     
+  }
+
+
+// StateAutoTelSelector ---> Tarea 11
+void Chamber::stateAutoTelSelector(void){
+
+  
+  
+
+  if (digitalRead(AUTO_TEL_SELECTOR)) 
+  {
+    //Asignamos el HR a 1
+    SET_AUTOTEL_SELECTOR_HR;
+
+    if (AUTO_TEL_SELECTOR_STATE){
+      // control humedad y temperatura  bloqueado
+      autoSelectorValue = 0;
+
+      if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0)){
+        SET_AUTOTEL_SELECTOR_HR; //ENABLE_AUTOTEL_SELECTOR_HR = 1;
+      }
+      else
+      {
+        CLEAR_AUTOTEL_SELECTOR_HR; //ENABLE_AUTOTEL_SELECTOR_HR = 0;
+      }
+    }
+    else
+    {
+      // control humedad y temperatura  desbloqueado
+      autoSelectorValue = 1;
+      CLEAR_AUTOTEL_SELECTOR_HR;
+    }
+  }
+  else {
+    CLEAR_AUTOTEL_SELECTOR_HR;
   }
 
 }

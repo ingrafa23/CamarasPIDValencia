@@ -110,7 +110,7 @@ class Chamber
 
     float baseEthyleneFlowRate = 0;
 
-    bool autoTelSelectorBlocker;
+    
     //-------------------------------------------
     //-------------------------------------------
     //banderas de forzado del sistema de control 
@@ -157,6 +157,10 @@ class Chamber
     void debugControlEthyleneFlow();
     void debugControlCo2();
     void debugControlTemp();
+    
+    //Auto selector selection
+    bool autoSelectorValue = 0;
+
     
 
 
@@ -225,19 +229,24 @@ class Chamber
 
     void enableInputOutput();
 
-    bool getStateAutoTelSelectorBlocker();
+
+
+    
 
     //Zeta de emergencia
-
-    void zetaEmergency();
+//---------> Tarea 4
+    void setaEmergency();
 
     // funcion que atiende y envia la interrupccion del microcut para la asignacion de un clear o un set del h_r 0,3
 
+  //---------> Tarea 5
     void atiendeMicroCutsInterrup(unsigend char *mflagMicroCutsPointer);
-
+//---------> Tarea 5
     void atiendeGeneralSwitchDetect(void);
-
+//---------> Tarea 5
     void setupSafetyRelayReset(void);
+//---------> Tarea 11
+    void stateAutoTelSelector(void);
     
     ~Chamber(void);
 

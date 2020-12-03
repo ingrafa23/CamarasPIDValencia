@@ -74,9 +74,9 @@
 #define ENABLE_EVAPORATOR_FAN_ACTIVATOR     _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 1)
 #define ENABLE_ALARM_SET                    _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 0)
 
-#define ENABLE_AUTO_TEL_SELECTOR            _modbusTCPServer->holdingRegisterReadBit(addressOffset + 256, 10)
-
-
+#define ENABLE_AUTOTEL_SELECTOR_HR          _modbusTCPServer->holdingRegisterReadBit(addressOffset + 256, 10)
+#define SET_AUTOTEL_SELECTOR_HR             _modbusTCPServer->holdingRegisterSetBit(addressOffset + 256, 10)
+#define CLEAR_AUTOTEL_SELECTOR_HR           _modbusTCPServer->holdingRegisterClearBit(addressOffset + 256, 10)
 
 struct strHoldingRegisterControlEnable
 {
@@ -94,7 +94,7 @@ struct strHoldingRegisterControlEnable
   unsigned char enable_control_heating_request; 
   unsigned char enable_evaporator_fan_activator;
   unsigned char enable_ethylene;
-  unsigned char enable_auto_tel_selector;
+  unsigned char enable_autotel_selector_hr;
 };
 
 extern struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
@@ -105,7 +105,7 @@ extern struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
 //#define EMERGENCY_STOP I0_0
 #define DOOR_1_OPEN_DETECT I0_2
 #define DOOR_2_OPEN_DETECT 0
-#define AUTO_TEL_SELECTOR I0_3
+
 
 
 
@@ -114,6 +114,8 @@ extern struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
 #define REF_C2H4                _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18)
 #define CHAMBER_VOLUMEN         _modbusTCPServer->holdingRegisterRead(addressOffset + 10)
 
+// definicion del auto selector
+#define AUTO_TEL_SELECTOR_STATE    _modbusTCPServer->holdingRegisterReadBit(addressOffset + 256, 11)
 
 
 
