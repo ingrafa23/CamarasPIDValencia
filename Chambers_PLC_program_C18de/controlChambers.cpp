@@ -622,10 +622,27 @@ Chamber::CO2Control(int *timerInitializationFanPointer)
         analogOutputModule1Values[1] = 20000;
         _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 3);
 
+        
+        //------------------------
         digitalWrite(INPUT_FAN_1, HIGH);
+        indicadoresEstados.inputFan1 = 1;
+        //------------------------
+        
+        //------------------------
         digitalWrite(OUTPUT_FAN_1, HIGH);
+        indicadoresEstados.outputFan1 = 1;
+        //------------------------
+        
+        //------------------------
         digitalWrite(INPUT_FAN_2, HIGH);
+        indicadoresEstados.inputFan2 = 1;
+        //------------------------
+        
+        //------------------------
         digitalWrite(OUTPUT_FAN_2, HIGH);
+        indicadoresEstados.outputFan2 = 1;
+        //------------------------
+        
       }
 
       if (calculatedSensorValues[3] <=
@@ -637,10 +654,22 @@ Chamber::CO2Control(int *timerInitializationFanPointer)
         analogOutputModule1Values[1] = 4000;
         _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);
 
+        //------------------------
         digitalWrite(INPUT_FAN_1, LOW);
+        indicadoresEstados.inputFan1 = 0;
+        //------------------------
+        //------------------------
         digitalWrite(OUTPUT_FAN_1, LOW);
+        indicadoresEstados.outputFan1 = 0;
+        //------------------------
+        //------------------------
         digitalWrite(INPUT_FAN_2, LOW);
+        indicadoresEstados.inputFan2 = 0;
+        //------------------------
+        //------------------------
         digitalWrite(OUTPUT_FAN_2, LOW);
+        indicadoresEstados.outputFan2 = 0;
+        //------------------------
       }
     }
     /////////////////////Final Control de CO2 por consigna////////////////////////
@@ -659,19 +688,43 @@ Chamber::CO2Control(int *timerInitializationFanPointer)
         analogOutputModule1Values[1] = 4000;
         _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);
         
+        //------------------------
         digitalWrite(INPUT_FAN_1, LOW);
+        indicadoresEstados.inputFan1 = 0;
+        //------------------------
+        //------------------------
         digitalWrite(OUTPUT_FAN_1, LOW);
+        indicadoresEstados.outputFan1 = 0;
+        //------------------------
+        //------------------------
         digitalWrite(INPUT_FAN_2, LOW);
+        indicadoresEstados.inputFan2 = 0;
+        //------------------------
+        //------------------------
         digitalWrite(OUTPUT_FAN_2, LOW);
+        indicadoresEstados.outputFan2 = 0;
+        //------------------------
       }
       else
       {
         _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2);
         _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 3);
+        //------------------------
         digitalWrite(INPUT_FAN_1, HIGH);
+        indicadoresEstados.inputFan1 = 1;
+        //------------------------
+        //------------------------
         digitalWrite(OUTPUT_FAN_1, HIGH);
+        indicadoresEstados.outputFan1 = 1;
+        //------------------------
+        //------------------------
         digitalWrite(INPUT_FAN_2, HIGH);
+        indicadoresEstados.inputFan2 = 1;
+        //------------------------
+        //------------------------
         digitalWrite(OUTPUT_FAN_2, HIGH);
+        indicadoresEstados.outputFan2 = 1;
+        //------------------------
 
         CO2PID->SetMode(AUTOMATIC);
 
@@ -714,10 +767,22 @@ Chamber::CO2Control(int *timerInitializationFanPointer)
         _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2);
         analogOutputModule1Values[1] = 4000;
         _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);
+        //------------------------
         digitalWrite(INPUT_FAN_1, LOW);
+        indicadoresEstados.inputFan1 = 0;
+        //------------------------
+        //------------------------
         digitalWrite(OUTPUT_FAN_1, LOW);
+        indicadoresEstados.outputFan1 = 0;
+        //------------------------
+        //------------------------
         digitalWrite(INPUT_FAN_2, LOW);
+        indicadoresEstados.inputFan2 = 0;
+        //------------------------
+        //------------------------
         digitalWrite(OUTPUT_FAN_2, LOW);
+        indicadoresEstados.outputFan2 = 0;
+        //------------------------
     }
     ///////////////////////Final Control del CO2 por PID//////////////////////////  
 
@@ -732,10 +797,22 @@ Chamber::CO2Control(int *timerInitializationFanPointer)
     analogOutputModule1Values[1] = 4000;
     _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);
     
+    //------------------------
     digitalWrite(INPUT_FAN_1, LOW);
-    digitalWrite(OUTPUT_FAN_1, LOW);
-    digitalWrite(INPUT_FAN_2, LOW);
-    digitalWrite(OUTPUT_FAN_2, LOW);
+    indicadoresEstados.inputFan1 = 0;
+    //------------------------
+    //------------------------
+        digitalWrite(OUTPUT_FAN_1, LOW);
+        indicadoresEstados.outputFan1 = 0;
+        //------------------------
+    //------------------------
+        digitalWrite(INPUT_FAN_2, LOW);
+        indicadoresEstados.inputFan2 = 0;
+        //------------------------
+    //------------------------
+        digitalWrite(OUTPUT_FAN_2, LOW);
+        indicadoresEstados.outputFan2 = 0;
+        //------------------------
   }
 /*END CONDITION ENABALE CONTROL SYSTEM CO2*/
 
@@ -1836,22 +1913,34 @@ void Chamber::enableInputOutput(){
   }
 
   if(!ENABLE_INPUT_FAN_1){
+    //------------------------
     digitalWrite(INPUT_FAN_1, LOW);
+    indicadoresEstados.inputFan1 = 0;
+    //------------------------
     analogOutputModule1Values[0] = 4000;
   }
 
   if(!ENABLE_OUTPUT_FAN_1){
-    digitalWrite(OUTPUT_FAN_1, LOW);
+    //------------------------
+        digitalWrite(OUTPUT_FAN_1, LOW);
+        indicadoresEstados.outputFan1 = 0;
+        //------------------------
     analogOutputModule1Values[0] = 4000;
   }
 
   if(!ENABLE_INPUT_FAN_2){
-    digitalWrite(INPUT_FAN_2, LOW);
+    //------------------------
+        digitalWrite(INPUT_FAN_2, LOW);
+        indicadoresEstados.inputFan2 = 0;
+        //------------------------
     analogOutputModule1Values[1] = 4000;
   }
 
   if(!ENABLE_OUTPUT_FAN_2){
-    digitalWrite(OUTPUT_FAN_2, LOW);
+    //------------------------
+        digitalWrite(OUTPUT_FAN_2, LOW);
+        indicadoresEstados.outputFan2 = 0;
+        //------------------------
     analogOutputModule1Values[1] = 4000;
   }
 
@@ -1928,26 +2017,38 @@ void Chamber::forcedControl()
 
   if (FORCED_INPUT_FAN_1)
   {
+    //------------------------
     digitalWrite(INPUT_FAN_1, HIGH);
+    indicadoresEstados.inputFan1 = 1;
+    //------------------------
     analogOutputModule1Values[0]=20000;
     
   }
 
   if (FORCED_INPUT_FAN_2)
   {
-    digitalWrite(INPUT_FAN_2, HIGH);
+    //------------------------
+        digitalWrite(INPUT_FAN_2, HIGH);
+        indicadoresEstados.inputFan2 = 1;
+        //------------------------
     analogOutputModule1Values[0]=20000;
   }
 
   if (FORCED_OUTPUT_FAN_1)
   {
-    digitalWrite(OUTPUT_FAN_1, HIGH);
+    //------------------------
+        digitalWrite(OUTPUT_FAN_1, HIGH);
+        indicadoresEstados.outputFan1 = 1;
+        //------------------------
     analogOutputModule1Values[1]=20000;
   }
   
   if (FORCED_OUTPUT_FAN_2)
   {
-    digitalWrite(OUTPUT_FAN_2, HIGH);
+    //------------------------
+        digitalWrite(OUTPUT_FAN_2, HIGH);
+        indicadoresEstados.outputFan2 = 1;
+        //------------------------
     analogOutputModule1Values[1]=20000;
   }
 

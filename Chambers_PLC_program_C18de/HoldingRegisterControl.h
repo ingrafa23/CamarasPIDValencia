@@ -117,6 +117,21 @@ extern struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
 // definicion del auto selector
 #define AUTO_TEL_SELECTOR_STATE    _modbusTCPServer->holdingRegisterReadBit(addressOffset + 256, 11)
 
+//Holdregister Indicadores de Estado
+
+#define SET_INDICATE_STATE_INPUT_FAN_1(mState)                (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2);})    //hr 338,2
+#define SET_INDICATE_STATE_OUTPUT_FAN_1(mState)               (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 3);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);})    //hr 338,3
+#define SET_INDICATE_STATE_INPUT_FAN_2(mState)                (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 12);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 12);})  //hr 338,12
+#define SET_INDICATE_STATE_OUTPUT_FAN_2(mState)               (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 13);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 13);})  //hr 338,13
+#define SET_INDICATE_STATE_AEROHEATERS(mState)      //poner a 1 todos los booleanos de hr 259  
+#define SET_INDICATE_STATE_HUMIDITY_WATER_VALVES(mState)      (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 0);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 0);})    //hr 338,0
+#define SET_INDICATE_STATE_HUMIDITY_AIR_VALVES(mState)   //hr 338,1
+#define SET_INDICATE_STATE_HEATING_REQUEST(mState)   //hr 338,15
+#define SET_INDICATE_STATE_COOLING_REQUEST(mState)   //hr 339,0
+#define SET_INDICATE_STATE_EVAPORATOR_FAN_ACTIVATOR(mState)   //hr 339,1
+#define SET_INDICATE_STATE_ALARM_SET(mState)   //hr 339,4
+#define SET_INDICATE_STATE_ETILENO_VALVE(mState)  //338,1
+#define SET_INDICATE_STATE_ DOOR_1_OPEN_DETECT(mState)  //hr 1,4
 
 
 #endif

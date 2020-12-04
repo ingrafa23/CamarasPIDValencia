@@ -148,6 +148,29 @@ class Chamber
     //Activador alarma
     bool alarmOn = 0;
 
+    //Structura de los indicadores de Estado
+
+    struct controlChambersIndicadores
+    {
+      unsigned char inputFan1;
+      unsigned char inputFan2;
+      unsigned char outputFan1;
+      unsigned char outputFan2;
+      unsigned char aeroHeaters;
+      unsigned char humidityWaterValves;
+      unsigned char AirValves;
+      unsigned char heatingRequest;
+      unsigned char coolingRequest;
+      unsigned char evaporatorFanActivator;
+      unsigned char alarmSet;
+      unsigned char etilenoValve;
+      unsigned char door1OpenDetect;
+
+    };
+    
+    //-------> Tarea 17
+    struct controlChambersIndicadores indicadoresEstados;
+
     
 
     //funciones privadas para hacer debuggear en cada uno de los sistemas de control
