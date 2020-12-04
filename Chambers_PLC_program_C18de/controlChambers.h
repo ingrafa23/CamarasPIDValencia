@@ -249,6 +249,10 @@ class Chamber
     void setupSafetyRelayReset(void);
 //---------> Tarea 11
     void stateAutoTelSelector(void);
+
+  //----------> Tarea 17
+  // indicadoresEstados es la funcion encargada de verficar las Salidas digitales 
+  void indicadoresEstados(void);
     
     ~Chamber(void);
 

@@ -119,7 +119,10 @@ extern struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
 
 //Holdregister Indicadores de Estado
 
-#define SET_INDICATE_STATE_INPUT_FAN_1(mState)                (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2);})    //hr 338,2
+#define INDICATE_STATE_INPUT_FAN_1_ON     _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2)
+
+#define INDICATE_STATE_INPUT_FAN_1_OFF  _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2)
+
 #define SET_INDICATE_STATE_OUTPUT_FAN_1(mState)               (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 3);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);})    //hr 338,3
 #define SET_INDICATE_STATE_INPUT_FAN_2(mState)                (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 12);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 12);})  //hr 338,12
 #define SET_INDICATE_STATE_OUTPUT_FAN_2(mState)               (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 13);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 13);})  //hr 338,13

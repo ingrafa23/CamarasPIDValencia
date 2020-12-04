@@ -2239,6 +2239,92 @@ void Chamber::stateAutoTelSelector(void){
 
 }
 
+  //----------> Tarea 17
+  // indicadoresEstados es la funcion encargada de verficar las Salidas digitales 
+  void Chamber::indicadoresEstados(void){
+    //Salida INPUT_FAN_1
+    if (digitalRead(INPUT_FAN_1))
+    {
+      INDICATE_HR_STATE_INPUT_FAN_1_ON;
+    }
+    else
+    {
+      INDICATE_HR_STATE_INPUT_FAN_1_OFF;
+    }
+
+    //Salida INPUT_FAN_2
+    if (digitalRead(INPUT_FAN_2))
+    {
+      INDICATE_HR_STATE_INPUT_FAN_2_ON;
+    }
+    else
+    {
+      INDICATE_HR_STATE_INPUT_FAN_2_OFF;
+    }
+
+    //Salida OUTPUT_FAN_1
+    if (digitalRead(OUTPUT_FAN_1))
+    {
+      INDICATE_HR_STATE_OUTPUT_FAN_1_ON;
+    }
+    else
+    {
+      INDICATE_HR_STATE_OUTPUT_FAN_1_OFF;
+    }
+
+    //Salida OUTPUT_FAN_2
+    if (digitalRead(OUTPUT_FAN_2))
+    {
+      INDICATE_HR_STATE_OUTPUT_FAN_2_ON;
+    }
+    else
+    {
+      INDICATE_HR_STATE_OUTPUT_FAN_2_OFF;
+    }
+
+    //Salida AEROHEATERS
+    if (digitalRead(AEROHEATERS))
+    {
+      INDICATE_HR_STATE_AEROHEATERS_ON;
+    }
+    else
+    {
+      INDICATE_HR_STATE_AEROHEATERS_OFF;
+    }
+
+    //Salida HUMIDITY_WATER_VALVES 
+    if (digitalRead(HUMIDITY_WATER_VALVES ))
+    {
+      INDICATE_HR_STATE_HUMIDITY_WATER_VALVES_ON;
+    }
+    else
+    {
+      INDICATE_HR_STATE_HUMIDITY_WATER_VALVES_OFF;
+    }
+
+    //Salida HEATING_REQUEST 
+    if (digitalRead(HEATING_REQUEST))
+    {
+      INDICATE_HR_STATE_HEATING_REQUEST_ON;
+    }
+    else
+    {
+      INDICATE_HR_STATE_HEATING_REQUEST_OFF;
+    }
+
+    //Salida COOLING_REQUEST 
+    if (digitalRead(COOLING_REQUEST))
+    {
+      INDICATE_HR_STATE_COOLING_REQUEST_ON;
+    }
+    else
+    {
+      INDICATE_HR_STATE_COOLING_REQUEST_OFF;
+    }
+    
+    
+  }
+
 Chamber::~Chamber(){
   
 }
