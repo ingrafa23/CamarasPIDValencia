@@ -12,19 +12,20 @@ void controlChamberEthylene::setup(){
 
 }
 
-void controlChamberEthylene::controlChamberEthylene(ModbusTCPServer *modbusTCPServer,int maddressOffset)
+controlChamberEthylene::controlChamberEthylene(ModbusTCPServer *modbusTCPServer,int maddressOffset)
 {
   _modbusTCPServer = modbusTCPServer;
   addressOffset = maddressOffset;
 
 //-----------------
-  _mapsensor = new mapsensor(&modbusTCPServer,
+int mConts =CONST_NORMALIZATION_ETHYLENE_PID;
+  _mapsensor = new mapsensor(_modbusTCPServer,
                         addressOffset + 262,            // C2h4 Measure
                         addressOffset + 83,             // LowLimit1
                         addressOffset + 84,             // HighLimit1
                         addressOffset + 85,             // zeroSensor1
                         addressOffset + 86,             // spanSensor1
-                        CONST_NORMALIZATION_ETHYLENE_PID);   // constante de normalización co2
+                        mConts);   // constante de normalización co2
   //-----------------
   
 
@@ -285,23 +286,23 @@ void controlChamberEthylene::run(double medidaSensor){
     //------Funcion que ejecuta si esta activo el debuger----------
     //------Funcion que ejecuta si esta activo el debuger----------
         String strDebug;
-        strDebug = F("-------Console Ethylene Control -------------------------------------\n");
-        strDebug +=F("Setpoint : "); 
+        strDebug = "-------Console Ethylene Control -------------------------------------\n";
+        strDebug +="Setpoint : "; 
         strDebug += String(ethyleneSetpoint,DEC);
-        strDebug = F("\n");
-        strDebug +=F("Sensor Input  : "); 
+        strDebug = "\n";
+        strDebug +="Sensor Input  : "; 
         strDebug += String(calculatedSensorValues,DEC);
-        strDebug = F("\n");
-        strDebug +=F("Valor PID: "); 
-        strDebug += String(analogOutputModule1Values,DEC);
-        strDebug = F("\n");
-        strDebug = F("--------------------------------------------\n");
-        debugControlEthylene(strDebug);
+        strDebug = "\n";
+        strDebug +="Valor PID: "; 
+        strDebug += String(analogOutputModule1Values.value,DEC);
+        strDebug = "\n";
+        strDebug = "--------------------------------------------\n";
+        this->debugControlEthylene(strDebug);
     //----------------
 }
 
 
-void controlChamberEthylene::getAlarmOnGeneral(){
+bool controlChamberEthylene::getAlarmOnGeneral(){
     return alarmOnGeneral;
 }
 
@@ -315,9 +316,23 @@ bool controlChamberEthylene::getAnalogOutputModule1FlagEthylene(){
     return m_resp;
 }
 
+//funciones privada
+/* funcion para debugear el control */
+void controlChamberEthylene::debugControlEthylene(String mdebug){
+  if (debugConsole.ethylene)
+  {
+    unsigned long timeConsoleIn = abs(debugLastTime.ethylene -  millis());
+    if(timeConsoleIn>1000){//para que se imprima cada 1000ms
+    debugLastTime.ethylene = millis();
+      //--------------aca se imprime todo lo que quiera
+      Serial.println(mdebug);
+    }   
+  }
+}
 
 
-void controlChamberEthylene::~controlChamberEthylene(){
+
+controlChamberEthylene::~controlChamberEthylene(){
 
 }
 

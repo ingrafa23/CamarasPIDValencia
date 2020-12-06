@@ -7,7 +7,7 @@
 #include "InputOutputAssignments.h"
 #include <PID_v1.h>
 #include <Filter.h>
-
+#include "mapsensor.h"
 
 class controlChamberTemperature
 {

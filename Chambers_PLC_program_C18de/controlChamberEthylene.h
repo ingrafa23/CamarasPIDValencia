@@ -1,5 +1,5 @@
-#ifndef control_chamber_ethylene_H
-#define control_chamber_ethylene_H
+#ifndef CONTROL_CHAMBER_ETHYLENE_H
+#define CONTROL_CHAMBER_ETHYLENE_H
 
 #include <ArduinoModbus.h>
 #include <Arduino.h>
@@ -12,7 +12,7 @@
 #include "mapsensor.h"
 
 //ETHYLENE PID CONTROL
-  #define CONST_NORMALIZATION_ETHYLENE_PID 1.0
+  #define CONST_NORMALIZATION_ETHYLENE_PID 1
   //#define ETHYLENE_PID_LIMIT_MIN 13500 //minimo PID
   #define ETHYLENE_PID_LIMIT_MIN 13500 //minimo PID
   #define ETHYLENE_PID_LIMIT_MAX 15000//16200 //Maximo PID
@@ -48,12 +48,8 @@ private:
     bool flagForcedEthylene;
     //banderas de enable del sistema de control 
     bool flagEnableControlSystemEthylene;
-    //funciones privadas para hacer debuggear en etileno
-    void debugControlEthylene(String mdebug);
-
-    //Variables de normalizacion
-    double valueEthyleneNormalization;  
-    double valueEthyleneSetpointNormalization;
+    
+    
     double calculatedSensorValues;
     bool alarmOnGeneral;
 
@@ -67,7 +63,10 @@ private:
         bool flag;
     }analogOutputModule1Values;
     
-    
+       
+    //funciones privadas para hacer debuggear en etileno
+    void debugControlEthylene(String mdebug);
+
 
 
 public:
@@ -89,4 +88,6 @@ public:
     void stateIndicator(void);
 
     ~controlChamberEthylene();
-}
+};
+
+#endif

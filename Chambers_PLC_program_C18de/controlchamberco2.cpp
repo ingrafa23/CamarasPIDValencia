@@ -8,6 +8,7 @@
 #include "mapsensor.h"
 
 
+
 struct StructValidationPID  ValidationPIDCO2;
  
 void controlchamberco2::setup(){
@@ -20,7 +21,7 @@ controlchamberco2::controlchamberco2(ModbusTCPServer *modbusTCPServer,int maddre
   _modbusTCPServer = modbusTCPServer;
   addressOffset = maddressOffset;
   //-----------------
-  _mapsensor = new mapsensor(&modbusTCPServer,
+  _mapsensor = new mapsensor(modbusTCPServer,
                         addressOffset + 264,            // CO2 Measure
                         addressOffset + 87,             // LowLimit1
                         addressOffset + 88,             // HighLimit1
@@ -46,7 +47,8 @@ controlchamberco2::controlchamberco2(ModbusTCPServer *modbusTCPServer,int maddre
 }
 
 //alarmas co2
-controlchamberco2::alarm(){
+
+void controlchamberco2::alarm(){
     //EMPIEZAN ALARMAS CO2
 
   if (calculatedSensorValues > _modbusTCPServer->holdingRegisterRead(addressOffset + 42)) // > setpoint alarm co2
@@ -108,7 +110,7 @@ controlchamberco2::alarm(){
 
 
 //Lectura de los Sensores de CO2
-controlchamberco2::readCO2(double medidaSensor)
+void controlchamberco2::readCO2(double medidaSensor)
 {
   _mapsensor->mapFloatMeasurementSensor(medidaSensor);
   valueCO2Normalization = _mapsensor->getValueSensorNormaliced();
@@ -117,17 +119,17 @@ controlchamberco2::readCO2(double medidaSensor)
 
 
 
-controlchamberco2:: CO2Control(){
+void controlchamberco2::CO2Control(){
 
     //Si la cámara está en marcha regula el CO2 y si no desactiva la regulación
 if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ||
     alarmSensorCO21 == false || alarmSensorCO22 == false )  
   {
+    
     /////////////////////////Control de CO2 por consigna//////////////////////////
     if (!_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 5) ) 
     {
-      if (calculatedSensorValues >=
-          _modbusTCPServer->holdingRegisterRead(addressOffset + 21))
+      if (calculatedSensorValues >=_modbusTCPServer->holdingRegisterRead(addressOffset + 21))
       {
         analogOutputModule1ValuesCo2[0] = CO2_PID_OPEN;
         _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2);
@@ -141,8 +143,7 @@ if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ||
         
       }
 
-      if (calculatedSensorValues <=
-          _modbusTCPServer->holdingRegisterRead(addressOffset + 20))
+      if (calculatedSensorValues <= _modbusTCPServer->holdingRegisterRead(addressOffset + 20))
       {
 
         analogOutputModule1ValuesCo2[0] = CO2_PID_CLOSE;
@@ -158,6 +159,7 @@ if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ||
 
       }
     }
+    
     /////////////////////Final Control de CO2 por consigna////////////////////////
 
     //////////////////////////Control del CO2 por PID/////////////////////////////
@@ -184,7 +186,7 @@ if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ||
         _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2);
         _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 3);
         
-        //digitalWrite(INPUT_FAN_1, HIGH); // ¿? estaba comentado ***
+        
         controlChamberCo2IO.inputFan1 = 1;  //-----digitalWrite(INPUT_FAN_1, HIGH);
         controlChamberCo2IO.inputFan2 = 1;  //-----digitalWrite(OUTPUT_FAN_1, HIGH);
         controlChamberCo2IO.outputFan1 = 1; //-----digitalWrite(INPUT_FAN_2, HIGH);
@@ -194,7 +196,7 @@ if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ||
         CO2PID->SetTunings(KP_CO2_PID, KI_CO2_PID, KD_CO2_PID, 1);
 
         CO2Setpoint = (double)_modbusTCPServer->holdingRegisterRead(addressOffset + 21);
-        valueCO2SetpointNormalization = CO2Setpoint / CONST_NORMALIZATION_CO2_PID; // linea nueva
+        valueCO2SetpointNormalization = CO2Setpoint / CONST_NORMALIZATION_CO2_PID; 
         
         CO2PID->Compute();
 
@@ -215,10 +217,12 @@ if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ||
         }
       }
 
-      }
+      
+      
     }
-    else
-    {
+    
+    else{
+      
         CO2PID->SetMode(MANUAL);
         analogOutputModule1ValuesCo2[0] = CO2_PID_CLOSE;
         _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2);
@@ -228,13 +232,14 @@ if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ||
         controlChamberCo2IO.inputFan2 = 0;  //-----digitalWrite(OUTPUT_FAN_1, LOW);
         controlChamberCo2IO.outputFan1 = 0; //-----digitalWrite(INPUT_FAN_2, LOW);
         controlChamberCo2IO.outputFan2 = 0; //-----digitalWrite(OUTPUT_FAN_2, LOW);
+        
     }
     ///////////////////////Final Control del CO2 por PID//////////////////////////  
 
 
   }
-  else
-  {
+  else{
+    
     CO2PID->SetMode(MANUAL);
     ethyleneFlowRateCO2Control = 0;
     analogOutputModule1ValuesCo2[0] = CO2_PID_CLOSE;
@@ -247,9 +252,11 @@ if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ||
     controlChamberCo2IO.outputFan1 = 0; //-----digitalWrite(INPUT_FAN_2, LOW);
     controlChamberCo2IO.outputFan2 = 0; //-----digitalWrite(OUTPUT_FAN_2, LOW);
   }
+  
 /*END CONDITION ENABALE CONTROL SYSTEM CO2*/
 
 }
+
 
 
 void controlchamberco2::enable(){
@@ -315,41 +322,41 @@ void controlchamberco2::stateIndicator(){
   //Salida INPUT_FAN_1
     if (digitalRead(INPUT_FAN_1))
     {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2)
+      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2);
     }
     else
     {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2)
+      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2);
     }
 
     //Salida OUTPUT_FAN_1
     if (digitalRead(OUTPUT_FAN_1))
     {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 3)
+      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 3);
     }
     else
     {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3)
+      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);
     }
 
     //Salida INPUT_FAN_2
     if (digitalRead(INPUT_FAN_2))
     {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 12)
+      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 12);
     }
     else
     {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 12)
+      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 12);
     }
 
     //Salida OUTPUT_FAN_2
     if (digitalRead(OUTPUT_FAN_2))
     {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 13)
+      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 13);
     }
     else
     {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 13)
+      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 13);
     }
 
 }
@@ -369,24 +376,24 @@ void controlchamberco2::run(double medidaSendor){
 
     //------Funcion que ejecuta si esta activo el debuger----------
         String strDebugCo2;
-        strDebugCo2 = F("-------Console CO2 -------------------------------------\n");
-        strDebugCo2 +=F("ValidationPIDCO2.flag : "); 
+        strDebugCo2 = "-------Console CO2 -------------------------------------\n";
+        strDebugCo2 += "ValidationPIDCO2.flag : "; 
         strDebugCo2 += String(ValidationPIDCO2.flag,DEC);
-        strDebugCo2 = F("\n");
-        strDebugCo2 +=F("CO2_Setpoint : "); 
+        strDebugCo2 = "\n";
+        strDebugCo2 += "CO2_Setpoint : "; 
         strDebugCo2 += String(CO2Setpoint,DEC);
-        strDebugCo2 = F("\n");
-        strDebugCo2 +=F("Sensor CO2 V1 : "); 
-        strDebugCo2 += String(analogOutputModule1Values[0],DEC);
-        strDebugCo2 = F("\n");
-        strDebugCo2 +=F("Sensor CO2 V2 : "; 
-        strDebugCo2 += String(analogOutputModule1Values[1],DEC);
-        strDebugCo2 = F("\n");
-        strDebugCo2 +=F("Salida PID CO2_Control: "); 
+        strDebugCo2 = "\n";
+        strDebugCo2 +="Sensor CO2 V1 : "; 
+        strDebugCo2 += String(analogOutputModule1ValuesCo2[0],DEC);
+        strDebugCo2 = "\n";
+        strDebugCo2 +="Sensor CO2 V2 : "; 
+        strDebugCo2 += String(analogOutputModule1ValuesCo2[1],DEC);
+        strDebugCo2 = "\n";
+        strDebugCo2 +="Salida PID CO2_Control: "; 
         strDebugCo2 += String(CO2PIDOutput,DEC);
-        strDebugCo2 = F("\n");
-        strDebugCo2 = F("--------------------------------------------\n");
-        debugControlCo2(strDebugCo2);
+        strDebugCo2 = "\n";
+        strDebugCo2 = "--------------------------------------------\n";
+        this->debugControlCo2(strDebugCo2);
     //------------------------------------------------------------
 
 }
@@ -406,12 +413,14 @@ int controlchamberco2::getMinCo2(){
 }
 
 
+
 /* funcion para debugear el control de co2 */
-void Chamber::debugControlCo2(String mdebug){
+void controlchamberco2::debugControlCo2(String mdebug){
   if (debugConsole.co2)
   {
-    unsigned long timeConsoleIn = millis();
+    unsigned long timeConsoleIn = abs(debugLastTime.co2 - millis());
     if(timeConsoleIn>1000){//para que se imprima cada 1000ms
+      debugLastTime.co2 = millis();
       //--------------aca se imprime todo lo que quiera
       Serial.println(mdebug);
     }   
@@ -419,6 +428,5 @@ void Chamber::debugControlCo2(String mdebug){
 }
 
 
-controlchamberco2::~controlchamberco2()
-{
+controlchamberco2::~controlchamberco2(){
 }

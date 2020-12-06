@@ -5,9 +5,7 @@ bufferfifo fifoInteprete;
 
 struct strdebug debugConsole = {0,0,0,0,0};
 struct strdebug debugLastTime = {0,0,0,0,0};
-{
-    /* data */
-};
+
 
 
 void beginserial(){

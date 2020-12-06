@@ -11,7 +11,7 @@
 #include "consoladebug.h"
 #include "mapsensor.h"
 
-#define CONST_NORMALIZATION_HUMIDITY_PID 100.0
+#define CONST_NORMALIZATION_HUMIDITY_PID 100
 #define OUTPUT_HUMIDITY_LIMITS_MIN 0
 #define OUTPUT_HUMIDITY_LIMITS_MAX 10
 #define SAMPLE_TIME_HUMIDITY 1000  //ms
@@ -73,7 +73,7 @@ public:
     void writeIO();
     bool getAlarmOnGeneral();
     //Control PID CO2         
-    void humidityControl();
+    void humidityControl(bool autoSelectorValue);
     void readHumidity(double medidaSensor);
     void stateIndicator(void);
 

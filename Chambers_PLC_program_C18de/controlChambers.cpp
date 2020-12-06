@@ -12,15 +12,14 @@ unsigned long lastValueInputFan2;
 unsigned long lastValueOutputFan2;
 bool flagTimerAlarmNoVentilationPointer;
 
-bool flagTimerOpenDoorTimeAlarm1Pointer;
-bool flagTimerOpenDoorTimeAlarm2Pointer;
+
 
 unsigned int lastTimeGases = 0;
 unsigned int TimeGases;
 
 struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
 
-struct StructValidationPID  ValidationPIDFlowethylene, ValidationPIDControlethylene, ValidationPIDCO2;
+
 
 Chamber::Chamber(int chamber,
                  ModbusTCPServer *modbusTCPServer,
@@ -37,7 +36,7 @@ Chamber::Chamber(int chamber,
   addressOffset = _chamber * numHoldingRegistersAddresses;
   eepromOffset = _chamber * numEepromAddresses;
 //---------------------------------------------------
-_mapsensorReadOutputFan1 = new mapsensor(&modbusTCPServer,
+_mapsensorReadOutputFan1 = new mapsensor(_modbusTCPServer,
                         addressOffset + 285,            // Measure
                         addressOffset + 119,             // LowLimit1
                         addressOffset + 120,             // HighLimit1
@@ -45,7 +44,7 @@ _mapsensorReadOutputFan1 = new mapsensor(&modbusTCPServer,
                         addressOffset + 121,             // spanSensor1
                         1);   // constante de normalización 
 //----------------------------------------
-_mapsensorReadOutputFan2 = new mapsensor(&modbusTCPServer,
+_mapsensorReadOutputFan2 = new mapsensor(_modbusTCPServer,
                         addressOffset + 289,            // Measure
                         addressOffset + 123,             // LowLimit1
                         addressOffset + 124,             // HighLimit1
@@ -54,17 +53,17 @@ _mapsensorReadOutputFan2 = new mapsensor(&modbusTCPServer,
                         1);   // constante de normalización
 //----------------------------------------
 
-  readsensorInput = new readsensor(&_modbusTCPClient1);
+  readsensorInput = new readsensor(_modbusTCPClient1);
 
-  _controlchamberco2 = new controlchamberco2(&modbusTCPServer,addressOffset);
-  _controlchambershumidity = new controlchambershumidity(&modbusTCPServer,addressOffset);
-  _controlChamberEthylene = new controlChamberEthylene(&modbusTCPServer,addressOffset);
-  _controlChamberEthyleneFlow = new controlChamberEthyleneFlow(&modbusTCPServer,addressOffset);
-  _controlChamberTemperature = new controlChamberTemperature(&modbusTCPServer,addressOffset);
+  _controlchamberco2 = new controlchamberco2(_modbusTCPServer,addressOffset);
+  _controlchambershumidity = new controlchambershumidity(_modbusTCPServer,addressOffset);
+  _controlChamberEthylene = new controlChamberEthylene(_modbusTCPServer,addressOffset);
+  _controlChamberEthyleneFlow = new controlChamberEthyleneFlow(_modbusTCPServer,addressOffset);
+  _controlChamberTemperature = new controlChamberTemperature(_modbusTCPServer,addressOffset);
   
 }
 
-Chamber::init()
+void Chamber::init()
 {
   
   //inicializo los timer de alamr a de puertas y ventilador 
@@ -76,10 +75,6 @@ Chamber::init()
   //Get persisten variables from eeprom
   int counter = 0;
 
-  tempDownActivator = false;
-  ethylDownActivator = false;
-  humidityDownActivator = false;
-  tempUpActivator = false;
 
   for (int i = 0; i < 250; i++)
   {
@@ -232,11 +227,11 @@ void Chamber::writeIODigital(){
   digitalWrite(SAFETY_RELAY_RESET,controlChambersIO.safetyRelayReset);
 }
 
-Chamber::alarms()
+void Chamber::alarms()
 {
   //Alarma General
   if(alarmOn == true || _controlchamberco2->getAlarmOnGeneral() == true || _controlchambershumidity->getAlarmOnGeneral() == true
-    || _controlChamberEthylene->getAlarmOnGeneral == true || _controlChamberTemperature->getAlarmOnGeneral() ==true)
+    || _controlChamberEthylene->getAlarmOnGeneral() == true || _controlChamberTemperature->getAlarmOnGeneral() ==true)
   {
     controlChambersIO.alarmSet = 1; //----- digitalWrite(ALARM_SET, HIGH);
   }
@@ -303,7 +298,7 @@ Chamber::alarms()
 }
 
 
-Chamber::writeToEeprom()
+void Chamber::writeToEeprom()
 {
   int modbusAddress = _modbusTCPServer->holdingRegisterRead(addressOffset + 261);
   int dataType = _modbusTCPServer->holdingRegisterRead(addressOffset + 260);
@@ -375,7 +370,7 @@ void Chamber::readOutputFan2(double medidaSensor){
 }
 
 
-Chamber::measurements()
+void Chamber::measurements()
 {
   readOutputFan1(analogRead(OUTPUT_FAN_PHASE_1));
   readOutputFan2(analogRead(OUT_FAN_PHASE_2));
@@ -445,7 +440,7 @@ void Chamber::forced()
 
 //Zeta de emergencia
 //-----> Tarea 4
-void setaEmergency(){
+void Chamber::setaEmergency(){
   if (digitalRead(EMERGENCY_STOP)){
     _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 0);
   } 
@@ -456,7 +451,7 @@ void setaEmergency(){
 
 //micro cortes
 //------>Tarea 5
-void Chamber::atiendeMicroCutsInterrup(unsigend char *mflagMicroCutsPointer){
+void Chamber::atiendeMicroCutsInterrup(unsigned char *mflagMicroCutsPointer){
   
   if (*mflagMicroCutsPointer)
   {
@@ -473,7 +468,7 @@ void Chamber::atiendeMicroCutsInterrup(unsigend char *mflagMicroCutsPointer){
 }
 
 //-----> Tarea 5
-void Chamber::atiendeGeneralSwitchDetect(void){
+void Chamber::atiendeGeneralSwitchDetect(){
 
   if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 3)){
     if(digitalRead(GENERAL_SWITCH_DETEC)){
@@ -515,31 +510,31 @@ void Chamber::atiendeGeneralSwitchDetect(void){
         }
         
       }
-
+    }
+  }
 }
 
 //---------> Tarea 5
-void Chamber::setupSafetyRelayReset(void){
-  if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 3))
-  {
+
+void Chamber::setupSafetyRelayReset(){
+  if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 3)){
     _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 3);
     controlChambersIO.safetyRelayReset = 1; //------digitalWrite(SAFETY_RELAY_RESET,HIGH);
     delay(1000);
     controlChambersIO.safetyRelayReset = 0; //-----digitalWrite(SAFETY_RELAY_RESET,LOW);
 	  _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 3);
-    
   }
-
+}
 
 // StateAutoTelSelector ---> Tarea 11
-void Chamber::stateAutoTelSelector(void){
+void Chamber::stateAutoTelSelector(){
 
   if (digitalRead(AUTO_TEL_SELECTOR)) 
   {
     //Asignamos el HR a 1
     SET_AUTOTEL_SELECTOR_HR;
-
     if (AUTO_TEL_SELECTOR_STATE){
+      
       // control humedad y temperatura  bloqueado
       autoSelectorValue = 0;
 
@@ -566,5 +561,4 @@ void Chamber::stateAutoTelSelector(void){
 
 
 Chamber::~Chamber(){
-  
 }

@@ -13,13 +13,14 @@ controlChamberEthyleneFlow::controlChamberEthyleneFlow(ModbusTCPServer *modbusTC
     addressOffset = maddressOffset;
 
     //-----------------
-    _mapsensor = new mapsensor(&modbusTCPServer,
+    int mConts =CONST_NORMALIZATION_ETHYLENE_FLOW_PID;
+    _mapsensor = new mapsensor(_modbusTCPServer,
                         addressOffset + 274,             // C2h4 flow Measure
                         addressOffset + 115,             // LowLimit1
                         addressOffset + 116,             // HighLimit1
                         addressOffset + 117,             // zeroSensor1
                         addressOffset + 118,             // spanSensor1
-                        CONST_NORMALIZATION_ETHYLENE_FLOW_PID);   // constante de normalización co2
+                        mConts);   // constante de normalización co2
     //-----------------
     // PID Control ethyleneFlowPID
     ethyleneFlowPID = new PID(&valueEthyleneFlowNormalization,
@@ -440,11 +441,11 @@ void controlChamberEthyleneFlow::modoConservacion()
 
 /* funcion para debugear el control del flujo de etileno */
 void controlChamberEthyleneFlow::debugControlEthyleneFlow(){
-  if (debugConsole.ethyleneflow)
+  if (debugConsole.ethyleneFlow)
   {
-    unsigned long timeConsoleIn = millis();
+    unsigned long timeConsoleIn = abs(debugLastTime.ethyleneFlow -  millis());
     if(timeConsoleIn>1000){//para que se imprima cada 1000ms
-      
+      debugLastTime.ethyleneFlow = millis();
       switch (debugEstadoModoDesverdizacion)
       {
       case MODO_INYECCION_INICIAL:

@@ -11,7 +11,7 @@ controlchambershumidity::controlchambershumidity(ModbusTCPServer *modbusTCPServe
     _modbusTCPServer = modbusTCPServer;
     addressOffset = maddressOffset;
     //-----------------
-    _mapsensor = new mapsensor(&modbusTCPServer,
+    _mapsensor = new mapsensor(_modbusTCPServer,
                         addressOffset + 266,            // humidity Measure
                         addressOffset + 79,             // LowLimit1
                         addressOffset + 80,             // HighLimit1
@@ -75,7 +75,7 @@ void controlchambershumidity::alarm(){
 
   if (humidityDownActivator == true)
   {
-    if (calculatedSensorValues[1] < _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 36))
+    if (calculatedSensorValues < _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 36))
     {
       if (timerLimitAlarmHumidity <= 0)
       {
@@ -248,20 +248,20 @@ void controlchambershumidity::run(double medidaSendor,bool autoSelectorValue){
 
   //------Funcion que ejecuta si esta activo el debuger----------
   String strDebug;
-  strDebug = F("-------Console humidity -------------------------------------\n");
-  strDebug +=F("Setpoint : "); 
+  strDebug = "-------Console humidity -------------------------------------\n";
+  strDebug +="Setpoint : "; 
   strDebug += String(humiditySetpoint,DEC);
-  strDebug = F("\n");
-  strDebug +=F("Sensor Input  : "); 
+  strDebug = "\n";
+  strDebug +="Sensor Input  : "; 
   strDebug += String(calculatedSensorValues,DEC);
-  strDebug = F("\n");
-  strDebug +=F("humidityCycleTOn: "); 
+  strDebug = "\n";
+  strDebug +="humidityCycleTOn: "; 
   strDebug += String(humidityCycleTOn,DEC);
-  strDebug = F("\n");
-  strDebug +=F("humidityCycleTOff: "); 
+  strDebug = "\n";
+  strDebug +="humidityCycleTOff: "; 
   strDebug += String(humidityCycleTOff,DEC);
-  strDebug = F("\n");
-  strDebug = F("--------------------------------------------\n");
+  strDebug = "\n";
+  strDebug = "--------------------------------------------\n";
   this->debugControlHumidity(strDebug);
   //----------------------------------------------------------------
 
@@ -302,11 +302,11 @@ void controlchambershumidity::stateIndicator(void){
   //Salida HUMIDITY_WATER_VALVES
     if (digitalRead(HUMIDITY_WATER_VALVES))
     {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 0)
+      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 0);
     }
     else
     {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 0)
+      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 0);
     }
 }
 
@@ -315,7 +315,7 @@ void controlchambershumidity::stateIndicator(void){
 void controlchambershumidity::debugControlHumidity(String mdebug){
   if (debugConsole.humidity)
     {
-      unsigned long timeCosoleIn = millis() - debugLastTime.humidity;
+      unsigned long timeCosoleIn = abs(millis() - debugLastTime.humidity);
       if (timeCosoleIn > 1000) //para que se imprima cada 1000ms
       {
         debugLastTime.humidity = millis();

@@ -24,6 +24,6 @@ void readsensor::runReadSesor(){
   }
 }
 
-double readsensor::getValueSensor(ind numSensor){
+double readsensor::getValueSensor(int numSensor){
     return rawValueInputModule1[numSensor];
 }

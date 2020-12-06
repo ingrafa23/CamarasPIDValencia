@@ -13,7 +13,7 @@ controlChamberTemperature::controlChamberTemperature(ModbusTCPServer *modbusTCPS
     addressOffset = maddressOffset;
 
     //-----------------
-    _mapsensor = new mapsensor(&modbusTCPServer,
+    _mapsensor = new mapsensor(_modbusTCPServer,
                         addressOffset + 270,             // Measure
                         addressOffset + 75,             // LowLimit1
                         addressOffset + 76,             // HighLimit1
@@ -45,7 +45,7 @@ void controlChamberTemperature::run(double medidaSensor,bool autoSelectorValue){
     this->writeIO();
     this->stateIndicator();
 
-    this.debugControlTemp();
+    this->debugControlTemperature();
 
     
 }
@@ -225,7 +225,7 @@ void controlChamberTemperature::writeIO(){
     digitalWrite(AEROHEATERS,controlChamberTemperatureIO.Aeroheaters);
 }
 
-bool controlChamberTemperature::getalarmOnGeneralGeneral(){
+bool controlChamberTemperature::getAlarmOnGeneral(){
     return alarmOnGeneral;
 }
 //Control        
@@ -467,7 +467,8 @@ void controlChamberTemperature::stateIndicator(void){
 //----------------------------
   if (controlChamberTemperatureIO.Aeroheaters)
   {
-    _modbusTCPServer->holdingRegisterWrite(addressOffset + 259, 0xff)
+    _modbusTCPServer->holdingRegisterWrite(addressOffset + 259, 0xff);
+  }
   else
   {
     _modbusTCPServer->holdingRegisterWrite(addressOffset + 259, 0x00);
@@ -489,21 +490,22 @@ void controlChamberTemperature::stateIndicator(void){
 //funciones privadas
 
 /* funcion para debugear el control de temperatura */
-void controlChamberTemperature::debugControlTemp(){
-  if (debugConsole.temperature)
+void controlChamberTemperature::debugControlTemperature(){
+  if (debugConsole.temp)
   {
-    unsigned long timeConsoleIn = millis();
+    unsigned long timeConsoleIn = abs(millis() - debugLastTime.temp);
     if(timeConsoleIn>1000){//para que se imprima cada 1000ms
+      debugLastTime.temp = millis();
       //--------------aca se imprime todo lo que quiera
       Serial.println("-------Console temperature -----------------------------");
       Serial.print("Sensor temperature value : "); Serial.println(calculatedSensorValues);
       Serial.print("Threshold heating activator : "); Serial.println(_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) -
-                                                                     _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 22)) &&
-                                                                     digitalRead(EXT_HEATER_AVAILABLE)));
+                                                                     _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 22) &&
+                                                                     digitalRead(EXT_HEATER_AVAILABLE));
       Serial.print("Heating activation : "); Serial.println(HEATING_REQUEST);
       Serial.print("Threshold cooling activator : "); Serial.println(_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) +
-                                                                     _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 24)) &&
-                                                                     digitalRead(EXT_COOLER_AVAILABLE))
+                                                                     _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 24) &&
+                                                                     digitalRead(EXT_COOLER_AVAILABLE));
       Serial.print("Cooling activation : "); Serial.println(COOLING_REQUEST);       
       Serial.println("-------________________---------------------------------");
     }

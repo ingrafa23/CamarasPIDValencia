@@ -27,7 +27,7 @@ typedef struct strdebug {
     unsigned char ethylene;
     unsigned char co2;
     unsigned char ethyleneFlow;
-    unsigned char temp
+    unsigned char temp;
 };
 
 extern struct strdebug debugConsole,debugLastTime;

@@ -114,7 +114,7 @@ void setup() {
   //------>Tarea 5
   //------->  Interrupcion por cambio de estado de pines
   attachInterrupt(digitalPinToInterrupt(MICRO_CUTS_DETECTION), attacMicroCuts, CHANGE);
-  
+
   chamber1.init();
   //---------> Tarea 5
   chamber1.setupSafetyRelayReset();
@@ -170,7 +170,7 @@ void loop() {
   {
     //------>Tarea 5
     //Atiende la interrupcion de MicroCuts
-    chamber1.atiendeMicroCutsInterrup(&flagAttacMicroCutsPointer); 
+    chamber1.atiendeMicroCutsInterrup(flagAttacMicroCutsPointer); 
     //----------------------
     //---------> Tarea 5
     chamber1.atiendeGeneralSwitchDetect();
@@ -184,7 +184,7 @@ void loop() {
   //Funcion que ejecuta los comandos recibido del interprete o cosola debug
   tareaMainInterprete();
   //Ejecuta el interprete de las acciones de los comados
-  interpreteEjecuta()
+  interpreteEjecuta();
 }
 
 //Interrupcion del pin MICRO_CUTS_DETECTION

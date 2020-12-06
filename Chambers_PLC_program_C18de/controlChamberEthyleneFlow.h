@@ -17,7 +17,7 @@
 #define MODO_DESVERDIZACION           3
 
 // Constantes ETHYLENE FLOW PID CONTROL
-#define CONST_NORMALIZATION_ETHYLENE_FLOW_PID 1.0
+#define CONST_NORMALIZATION_ETHYLENE_FLOW_PID 1
 // Constantes ETHYLENE FLOW PID CONTROL
 #define ETHYLENE__FLOW_PID_LIMIT_MIN     13500
 #define ETHYLENE__FLOW_PID_LIMIT_MAX     18000
@@ -95,7 +95,7 @@ private:
     unsigned char debugEstadoModoDesverdizacion;
     unsigned char estadoModoDesverdizacion;
     //-------------------------------------------------
-    void debugControlEthyleneFlow(String mdebug);
+    void debugControlEthyleneFlow();
 
 
 

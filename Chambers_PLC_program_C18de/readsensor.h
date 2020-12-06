@@ -16,7 +16,7 @@ public:
     readsensor(ModbusTCPClient *modbusTCPClient1);
 
     void runReadSesor(void);
-    double getValueSensor(ind numSensor);
+    double getValueSensor(int numSensor);
 
     ~readsensor();
 private:

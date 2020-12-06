@@ -1,7 +1,8 @@
 #include "variablestimer.h"
 
-structTimer timerInyectionEthyleneFlow;
-struct structTimer timerMicroCut = {0,0,0,0};
+struct structMicroCut timerMicroCut;
+struct structTimer timerInyectionEthyleneFlow;
+
 
 //timer Alarmas CO2
 int timerGoOffAlarmCO2 = 0;
@@ -31,7 +32,7 @@ int timerGoOffAlarmTemperature = 0;
 //timer alarmas generales
 int timerAlarmNoVentilation = 0;
 int timerOpenDoorTimeAlarm1 = 0;
-
+int timerOpenDoorTimeAlarm2 = 0;
 
 
 void setTimerIntEthyleneFlow(unsigned long v){

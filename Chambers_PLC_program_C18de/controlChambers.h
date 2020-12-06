@@ -100,6 +100,13 @@ class Chamber
     //Auto selector selection
     bool autoSelectorValue;
 
+    struct mcontrolChambersIO
+    {
+      bool alarmSet;
+      bool evaporatorFanActivator;
+      bool safetyRelayReset;
+    }controlChambersIO;
+
  
   public:
 
@@ -113,8 +120,8 @@ class Chamber
     void writeToEeprom();
 
     //Lectura de las entradas
-    void readOutputFan1();
-    void readOutputFan2();
+    void readOutputFan1(double medidaSensor);
+    void readOutputFan2(double medidaSensor);
 
     //mediciones
     void measurements();
@@ -145,26 +152,21 @@ class Chamber
     // funcion que atiende y envia la interrupccion del microcut para la asignacion de un clear o un set del h_r 0,3
 
     //---------> Tarea 5
-    void atiendeMicroCutsInterrup(unsigend char *mflagMicroCutsPointer);
+    void atiendeMicroCutsInterrup(unsigned char *mflagMicroCutsPointer);
     //---------> Tarea 5
-    void atiendeGeneralSwitchDetect(void);
+    void atiendeGeneralSwitchDetect();
     //---------> Tarea 5
-    void setupSafetyRelayReset(void);
+    void setupSafetyRelayReset();
     //---------> Tarea 11
-    void stateAutoTelSelector(void);
+    void stateAutoTelSelector();
 
     //----------> Tarea 17
     // indicadoresEstados es la funcion encargada de verficar las Salidas digitales 
-    void stateIndicator(void);
+    void stateIndicator();
     
-    ~Chamber(void);
+    ~Chamber();
 
-    struct mcontrolChambersIO
-    {
-      bool alarmSet;
-      bool evaporatorFanActivator;
-      bool safetyRelayReset;
-    }controlChambersIO;
+    
     
     
 };
