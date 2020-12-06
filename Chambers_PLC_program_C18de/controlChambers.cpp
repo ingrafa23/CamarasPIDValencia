@@ -6,16 +6,11 @@
 #include "miscellaneous.h"
 #include "consoladebug.h"
 
-
-
-
-
 unsigned long lastValueInputFan1;
 unsigned long lastValueOutputFan1;
 unsigned long lastValueInputFan2;
 unsigned long lastValueOutputFan2;
 bool flagTimerAlarmNoVentilationPointer;
-
 
 bool flagTimerOpenDoorTimeAlarm1Pointer;
 bool flagTimerOpenDoorTimeAlarm2Pointer;
@@ -23,12 +18,9 @@ bool flagTimerOpenDoorTimeAlarm2Pointer;
 unsigned int lastTimeGases = 0;
 unsigned int TimeGases;
 
-
 struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
 
 struct StructValidationPID  ValidationPIDFlowethylene, ValidationPIDControlethylene, ValidationPIDCO2;
-
-
 
 Chamber::Chamber(int chamber,
                  ModbusTCPServer *modbusTCPServer,
@@ -45,57 +37,42 @@ Chamber::Chamber(int chamber,
   addressOffset = _chamber * numHoldingRegistersAddresses;
   eepromOffset = _chamber * numEepromAddresses;
 //---------------------------------------------------
+_mapsensorReadOutputFan1 = new mapsensor(&modbusTCPServer,
+                        addressOffset + 285,            // Measure
+                        addressOffset + 119,             // LowLimit1
+                        addressOffset + 120,             // HighLimit1
+                        addressOffset + 121,             // zeroSensor1
+                        addressOffset + 121,             // spanSensor1
+                        1);   // constante de normalización 
+//----------------------------------------
+_mapsensorReadOutputFan2 = new mapsensor(&modbusTCPServer,
+                        addressOffset + 289,            // Measure
+                        addressOffset + 123,             // LowLimit1
+                        addressOffset + 124,             // HighLimit1
+                        addressOffset + 125,             // zeroSensor1
+                        addressOffset + 126,             // spanSensor1
+                        1);   // constante de normalización
+//----------------------------------------
+
   readsensorInput = new readsensor(&_modbusTCPClient1);
 
   _controlchamberco2 = new controlchamberco2(&modbusTCPServer,addressOffset);
   _controlchambershumidity = new controlchambershumidity(&modbusTCPServer,addressOffset);
   _controlChamberEthylene = new controlChamberEthylene(&modbusTCPServer,addressOffset);
   _controlChamberEthyleneFlow = new controlChamberEthyleneFlow(&modbusTCPServer,addressOffset);
+  _controlChamberTemperature = new controlChamberTemperature(&modbusTCPServer,addressOffset);
   
-
-
-  ethylenePID = new PID(&valueEthyleneNormalization,
-                        &ethylenePIDOutput,
-                        &valueEthyleneSetpointNormalization,
-                        1, 1, 1,
-                        DIRECT);
-  ethylenePID->SetSampleTime(1000);
-
-
-  
-  ethylenePID->SetOutputLimits(ETHYLENE_PID_LIMIT_MIN, ETHYLENE_PID_LIMIT_MAX);
-
-
-  
-
-  // de aqui para abajo se borrara
-
-  
-
-  ValidationPIDControlethylene.cont = 0;
-  ValidationPIDControlethylene.valor = 0;
-  ValidationPIDControlethylene.flag = 1;
-
-  
-
-  
-
 }
 
-/*Chamber::init(int *timerAlarmNoVentilationPointer,
-              int *timerOpenDoorTimeAlarm1Pointer,
-              int *timerOpenDoorTimeAlarm2Pointer)*/
-init(int *mtimerGoOffAlarmCO2Pointer,int *mtimerLimitAlarmCO2Pointer)
+Chamber::init()
 {
-  *timerGoOffAlarmCO2Pointer = &mtimerGoOffAlarmCO2Pointer;
-  *timerLimitAlarmCO2Pointer = &mtimerLimitAlarmCO2Pointer;
-
+  
   //inicializo los timer de alamr a de puertas y ventilador 
-/* pilas esto no debe estar aqui
-  *timerAlarmNoVentilationPointer = hour2seg(MAX_TIME_ALARM_NO_VENTILATION);
-  *timerOpenDoorTimeAlarm1Pointer = MAX_TIME_OPEN_DOOR_1;
-  *timerOpenDoorTimeAlarm2Pointer = MAX_TIME_OPEN_DOOR_2;
-*/
+
+  timerAlarmNoVentilation = hour2seg(MAX_TIME_ALARM_NO_VENTILATION);
+  timerOpenDoorTimeAlarm1 = MAX_TIME_OPEN_DOOR_1;
+  timerOpenDoorTimeAlarm2 = MAX_TIME_OPEN_DOOR_2;
+
   //Get persisten variables from eeprom
   int counter = 0;
 
@@ -122,9 +99,6 @@ init(int *mtimerGoOffAlarmCO2Pointer,int *mtimerLimitAlarmCO2Pointer)
     digitalWrite(Q0_0, LOW);
     clearBitEeprom(0, 3);
   }
-
-
-  
 }
 
 //este es uno nuevo no borrar
@@ -144,17 +118,86 @@ void Chamber::run(){
   // run control de ethylene flow
   _controlChamberEthyleneFlow->run(analogRead(ETHYLENE_FLOW_IN),_controlchamberco2->getAnalogOutputModule1ValuesCo2(0),
                               _controlchamberco2->getAnalogOutputModule1ValuesCo2(1),_controlchamberco2->getMinCo2());
+  // run control de temperatura
+  _controlChamberTemperature->run(readsensorInput->getValueSensor(rawValueInputModule1Temp),autoSelectorValue);                         
 
   //habilitadores
+  this->enable();
   //forzados
-  // escritura de entras
+  this->forced();
+  // escritura de entradas
+  //this->measurements();
   // escrituras de salidas
   this->writeAnalogValues();
+  this->writeIODigital();
   //indicadores
+  this->stateIndicator();
+
+  //stateAutoTelSelector
+  this->stateAutoTelSelector();
 
 }
 
-Chamber::writeAnalogValues()
+void Chamber::stateIndicator(){
+  if (digitalRead(ALARM_SET))
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 339, 4);
+  }
+  else
+  {
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 339, 4);
+  }
+  //-------------------------
+  if (digitalRead(EVAPORATOR_FAN_ACTIVATOR))
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 339, 1);
+  }
+  else
+  {
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 339, 1);
+  }
+  //----------------------------------------------------------------
+  if (digitalRead(SAFETY_RELAY_RESET))
+  {
+    //_modbusTCPServer->holdingRegisterSetBit(addressOffset + 339, xxx);
+  }
+  else
+  {
+    //_modbusTCPServer->holdingRegisterClearBit(addressOffset + 339, xxx);
+  }
+  
+  //-----------
+  if (autoSelectorValue)
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 339, 3);
+  }
+  else
+  {
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 339, 3);
+  }
+  
+  //----------------------------------------------
+  if (digitalRead(DOOR_1_OPEN_DETECT))
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 1, 4);
+  }
+  else
+  {
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 1, 4);
+  }
+
+  //-----------------------------
+  if (digitalRead(DOOR_2_OPEN_DETECT))
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 1, 5);
+  }
+  else
+  {
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 1, 5);
+  }
+}
+
+void Chamber::writeAnalogValues()
 {
   analogOutputModule1Values[analogOutputModule1ValuesCo2_0] = _controlchamberco2->getAnalogOutputModule1ValuesCo2(0);
   analogOutputModule1Values[analogOutputModule1ValuesCo2_0] = _controlchamberco2->getAnalogOutputModule1ValuesCo2(1);
@@ -183,416 +226,49 @@ Chamber::writeAnalogValues()
   _modbusTCPClient2->endTransmission();
 }
 
-
-void Chamber::alarmsGeneral(){
-//ojo este debe ser de las alarmas generales
-
-  if(alarmOn == true || _controlchamberco2->getAlarmOnGeneral() == true || _controlchambershumidity->getAlarmOnGeneral() == true
-    || _controlChamberEthylene->getAlarmOnGeneral == true)
-  {
-    digitalWrite(ALARM_SET, HIGH);
-  }
-  else
-  {
-    digitalWrite(ALARM_SET, LOW);
-  }
+void Chamber::writeIODigital(){
+  digitalWrite(ALARM_SET,controlChambersIO.alarmSet);
+  digitalWrite(EVAPORATOR_FAN_ACTIVATOR,controlChambersIO.evaporatorFanActivator);
+  digitalWrite(SAFETY_RELAY_RESET,controlChambersIO.safetyRelayReset);
 }
 
 Chamber::alarms()
 {
-
-  
-  if (previusMode != _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1) && turnOn == false)
+  //Alarma General
+  if(alarmOn == true || _controlchamberco2->getAlarmOnGeneral() == true || _controlchambershumidity->getAlarmOnGeneral() == true
+    || _controlChamberEthylene->getAlarmOnGeneral == true || _controlChamberTemperature->getAlarmOnGeneral() ==true)
   {
-    tempDownActivator = false;
-    setEthylUpActivator(false);//------ethylUpActivator = false;
-    _controlchambershumidity->setHumidityDownActivator(false);//-----humidityDownActivator = false;
-    tempUpActivator = false;
+    controlChambersIO.alarmSet = 1; //----- digitalWrite(ALARM_SET, HIGH);
   }
-
-  turnOn = _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0);
-
-  if ((previusMode != _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1)) && previusMode == false)
+  else
   {
-    tempDownActivator = false;
-    ethylDownActivator = false;
-  }
-  if ((previusMode != _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1)) && previusMode == true)
-  {
-    tempUpActivator = false;
-    setEthylUpActivator(false);//------ethylUpActivator = false;
-  }
-
-  if (calculatedSensorValues[SensorOuputTemperatureValuePos] < _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 30))
-  {
-    tempUpActivator = true;
+    controlChambersIO.alarmSet = 0; //----- digitalWrite(ALARM_SET, LOW);
   }
 
   
-
-  if (calculatedSensorValues[SensorOuputTemperatureValuePos] > _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 32))
-  {
-    tempDownActivator = true;
-  }
-
-  // esto esta en controlchamberhumidithy
-  /*
-  if (calculatedSensorValues[SensorOuputHumidityValuePos] > _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 36))
-  {
-    humidityDownActivator = true;
-  }
-  */
-
-  if (calculatedSensorValues[SensorOuputEthyleneValuePos] > _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 40))
-  {
-    ethylDownActivator = true;
-  }
-
-  //////////acaban activadores y desactivadores de las alarmas/////////
-
-  alarmOn = false;
-
-
-
-
-  ////////////////EMPIEZAN ALARMAS LÍMITES/////////////////////////
-
-  //EMPIEZAN ALARMAS TEMPERATURA
-
-  if (digitalRead(DEFROST_CYCLE) == false && tempUpActivator == true)
-  {
-    if (calculatedSensorValues[SensorOuputTemperatureValuePos] >= _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 30))
-    {
-      if (*timerLimitAlarmTemperaturePointer <= 0)
-      {
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 253, 13);
-        alarmOn = true;
-      }
-    }
-    else
-    {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 253, 13);
-      *timerLimitAlarmTemperaturePointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 156);
-    }
-  }
-
-  if (tempDownActivator == true)
-  {
-    if (calculatedSensorValues[SensorOuputTemperatureValuePos] <= _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 32))
-    {
-      if (*timerLimitAlarmTemperaturePointer <= 0)
-      {
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 253, 14);
-        alarmOn = true;
-      }
-    }
-    else
-    {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 253, 14);
-      *timerLimitAlarmTemperaturePointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 156);
-    }
-  }
-  //ACABAN ALARMAS TEMPERATURA
-/*
-  //EMPIEZAN ALARMAS HUMEDAD
-  if (calculatedSensorValues[SensorOuputHumidityValuePos] > _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 34))
-  {
-    if (*timerLimitAlarmHumidityPointer <= 0)
-    {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 253, 15);
-      alarmOn = true;
-    }
-  }
-  else
-  {
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 253, 15);
-    *timerLimitAlarmHumidityPointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 157);
-  }
-
-  if (humidityDownActivator == true)
-  {
-    if (calculatedSensorValues[SensorOuputHumidityValuePos] < _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 36))
-    {
-      if (*timerLimitAlarmHumidityPointer <= 0)
-      {
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 254, 0);
-        alarmOn = true;
-      }
-    }
-    else
-    {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 254, 0);
-      *timerLimitAlarmHumidityPointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 157);
-    }
-  }
-  //ACABAN ALARMAS HUMEDAD HUMEDAD SOLO INFERIOR
-*/
-  //EMPIEZAN ALARMAS ETILENO
-  if (calculatedSensorValues[SensorOuputEthyleneValuePos] > _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 38))
-  {
-    if (*timerLimitAlarmEthylenePointer <= 0)
-    {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 254, 1);
-      alarmOn = true;
-    }
-  }
-  else
-  {
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 254, 1);
-    *timerLimitAlarmEthylenePointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 158);
-  }
-
-  if (ethylDownActivator == true)
-  {
-    if (calculatedSensorValues[SensorOuputEthyleneValuePos] < _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 40))
-    {
-      if (*timerLimitAlarmEthylenePointer <= 0)
-      {
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 254, 2);
-        alarmOn = true;
-      }
-    }
-    else
-    {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 254, 2);
-      *timerLimitAlarmEthylenePointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 158);
-    }
-  }
-
-  //ACABAN ALARMAS ETILENO
-/*---------------------------
-  //EMPIEZAN ALARMAS CO2
-  if (calculatedSensorValues[SensorOuputCo2ValuePos] > _modbusTCPServer->holdingRegisterRead(addressOffset + 42))
-  {
-    if (*timerLimitAlarmCO2Pointer <= 0)
-    {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 254, 3);
-      alarmOn = true;
-      
-    }
-  }
-  else
-  {
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 254, 3);
-    *timerLimitAlarmCO2Pointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 159);
-  }
-  //ACABAN ALARMAS CO2
-*/
-  ////////////////ACABAN ALARMAS LÍMITES/////////////////////////
-
-  //Actualización del valor de modo anterior
-  previusMode = _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1);
-
-  //Lectura de los neutros y las fases de los ventiladores de entrada y salida y tiempo neutro
-
-  //  inFanPhase = analogRead(IN_FAN_PHASE);
-  //  inFanPhase = mapFloat(inFanPhase, 0, 10.23, 0, 0.1);
-  //  outFanPhase = analogRead(OUT_FAN_PHASE);
-  //  outFanPhase = mapFloat(outFanPhase, 0, 10.23, 0, 0.1);
-  //  inFanPhase2 = analogRead(IN_FAN_PHASE_2);
-  //  inFanPhase2 = mapFloat(outFanPhase2, 0, 10.23, 0, 0.1);
-  //  outFanPhase2 = analogRead(OUT_FAN_PHASE_2);
-  //  outFanPhase2 = mapFloat(outFanPhase2, 0, 10.23, 0, 0.1);
-
-  //Fin lectura de los neutros y las fases de los ventiladores de entrada y salida y tiempo neutro
-
-  //Escribimos en modbus
-  //  _modbusTCPServer->holdingRegisterWriteFloat(addressOffset + 205, inFanPhase);
-  //  _modbusTCPServer->holdingRegisterWriteFloat(addressOffset + 207, outFanPhase);
-  //  _modbusTCPServer->holdingRegisterWriteFloat(addressOffset + 209, inFanPhase2);
-  //  _modbusTCPServer->holdingRegisterWriteFloat(addressOffset + 211, outFanPhase2);
-
-  /////////////////////////Alarmas de bloqueo de sensor////////////////////////////
-
-  //Alarma repetición sensor de temperatura
-
-  if (calculatedSensorValues[SensorOuputTemperatureValuePos] == tempPreviusValue)
-  {
-    if (*timerGoOffAlarmTemperaturePointer <= 0)
-    {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 254, 12);
-      alarmSensorTemp1 = true;
-      alarmOn = true;
-    }
-  }
-  else
-  {
-    *timerGoOffAlarmTemperaturePointer = _modbusTCPServer->holdingRegisterRead(152);
-
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 254, 12);
-    alarmSensorTemp1 = false;
-  }
-
-  tempPreviusValue = calculatedSensorValues[SensorOuputTemperatureValuePos];
-
-  //Alarma repetición sensor de humedad 
-/*------------------- pasado
-  if (calculatedSensorValues[SensorOuputHumidityValuePos] == humidityPreviusValue)
-  {
-    if (*timerGoOffAlarmHumidityPointer <= 0)
-    {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 254, 14);
-      alarmSensorHumidity1 = true;
-      alarmOn = true;
-    }
-  }
-  else
-  {
-    *timerGoOffAlarmHumidityPointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 153);
-
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 254, 14);
-    alarmSensorHumidity1 = false;
-  }
-
-  humidityPreviusValue = calculatedSensorValues[SensorOuputHumidityValuePos];
-*/
-  //Alarma repetición sensor de etileno
-  //sin * comparamos valor de la memoria con se compara con valor almacenado
-  //calculatedSensorValues[SensorOuputEthyleneValuePos] = 2;
-  if (calculatedSensorValues[SensorOuputEthyleneValuePos] == ethylPreviusValue)
-  {
-    //Serial.print("Entra repetición  :"); Serial.println(*timerGoOffAlarmEthylenePointer);
-
-    if (*timerGoOffAlarmEthylenePointer <= 0)
-    {
-      //      Serial.println("Entra alarma");
-      //_modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 4);
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 255, 0);
-      alarmSensorEthyl1 = true;
-      alarmOn = true;
-    }
-  }
-  else
-  {
-    *timerGoOffAlarmEthylenePointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 154);
-    //    Serial.println("cambio");
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 255, 0);
-    alarmSensorEthyl1 = false;
-  }
-
-  ethylPreviusValue = calculatedSensorValues[SensorOuputEthyleneValuePos];
-
-  //Alarma repetición sensor de CO2
-
-  //Serial.println(calculatedSensorValues[SensorOuputCo2ValuePos]);
-/*--------pasado
-  if (calculatedSensorValues[SensorOuputCo2ValuePos] == CO2PreviusValue)
-  {
-    int e = *timerGoOffAlarmCO2Pointer;
-    //Serial.println(e);
-
-    if (*timerGoOffAlarmCO2Pointer <= 0)
-    {
-      //      Serial.println("repetido");
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 255, 2);
-      alarmSensorCO21 = true;
-      alarmOn = true;
-    }
-  }
-  else
-  {
-    *timerGoOffAlarmCO2Pointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 155);
-    //    Serial.println("diferente");
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 255, 2);
-    alarmSensorCO21 = false;
-  }
-
-  CO2PreviusValue = calculatedSensorValues[SensorOuputCo2ValuePos];
-*/
-  ///////////////////////ALARMAS FALLO SENSORES//////////////////////
-
-  //Alarma fallo sensor temperatura
-  if (calculatedSensorValues[SensorOuputTemperatureValuePos] < _modbusTCPServer->holdingRegisterRead(addressOffset + 146) ||
-      calculatedSensorValues[SensorOuputTemperatureValuePos] > _modbusTCPServer->holdingRegisterRead(addressOffset + 145))
-  {
-    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 254, 4);
-    alarmSensorTemp2 = true;
-    alarmOn = true;
-  }
-  else
-  {
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 254, 4);
-    alarmSensorTemp2 = false;
-  }
-  //Alarma fallo sensor humedad
-  /*--------pasado
-  if (calculatedSensorValues[SensorOuputHumidityValuePos] < _modbusTCPServer->holdingRegisterRead(addressOffset + 147))
-  {
-    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 254, 6);
-    alarmSensorHumidity2 = true;
-    alarmOn = true;
-  }
-  else
-  {
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 254, 6);
-    alarmSensorHumidity2 = false;
-  }
-
-  */
-  //Alarma fallo sensor etileno
-  if (calculatedSensorValues[SensorOuputEthyleneValuePos] < _modbusTCPServer->holdingRegisterRead(addressOffset + 149) ||
-      calculatedSensorValues[SensorOuputEthyleneValuePos] > _modbusTCPServer->holdingRegisterRead(addressOffset + 148))
-  {
-    //_modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 4);
-    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 254, 8);
-    alarmSensorEthyl2 = true;
-    alarmOn = true;
-  }
-  else
-  {
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 254, 8);
-    alarmSensorEthyl2 = false;
-  }
-  //Serial.println(calculatedSensorValues[SensorOuputCo2ValuePos]);
-
-  //Alarma fallo sensor CO2
-/*----------------------------- pasado
-  if (calculatedSensorValues[SensorOuputCo2ValuePos] < _modbusTCPServer->holdingRegisterRead(addressOffset + 151) ||
-      calculatedSensorValues[SensorOuputCo2ValuePos] > _modbusTCPServer->holdingRegisterRead(addressOffset + 150))
-  {
-    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 254, 10);
-    alarmSensorCO22 = true;
-    alarmOn = true;
-  }
-  else
-  {
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 254, 10);
-    alarmSensorCO22 = false;
-  }
-
-  if(alarmOn == true)
-  {
-    digitalWrite(ALARM_SET, HIGH);
-  }
-  else
-  {
-    digitalWrite(ALARM_SET, LOW);
-  }
-
-*/
   //EMPIEZAN VERIFICAR ALARMAS NO VENTILAR 
-    if (*timerAlarmNoVentilationPointer > 0) {
-    if( (VALUE_ACTUAL_INPUT_FAN1) || (VALUE_ACTUAL_OUTPUT_FAN1) || (VALUE_ACTUAL_INPUT_FAN2) || (VALUE_ACTUAL_OUTPUT_FAN2) ) {
+  if (timerAlarmNoVentilation > 0) {
+  if( (VALUE_ACTUAL_INPUT_FAN1) || (VALUE_ACTUAL_OUTPUT_FAN1) || (VALUE_ACTUAL_INPUT_FAN2) || (VALUE_ACTUAL_OUTPUT_FAN2) ) {
 
-     //unsigned int maxTimeAlarmVentilation = EEPROM.read(142)<<8 + EEPROM.read(143);
-     *timerAlarmNoVentilationPointer = hour2seg(MAX_TIME_ALARM_NO_VENTILATION);
-     flagTimerAlarmNoVentilationPointer = false;
+    //unsigned int maxTimeAlarmVentilation = EEPROM.read(142)<<8 + EEPROM.read(143);
+    timerAlarmNoVentilation = hour2seg(MAX_TIME_ALARM_NO_VENTILATION);
+    flagTimerAlarmNoVentilationPointer = false;
+  }
+  else
+  {
+    if(timerAlarmNoVentilation == 0 ){
+      flagTimerAlarmNoVentilationPointer = true;
+      _modbusTCPServer->holdingRegisterSetBit(256, 9);
     }
-    else
-    {
-     if(*timerAlarmNoVentilationPointer == 0 ){
-       flagTimerAlarmNoVentilationPointer = true;
-       _modbusTCPServer->holdingRegisterSetBit(256, 9);
-     }
-    }
-    }
+  }
+  }
   //FINALIZAR VERIFICACION ALARMAS VENTILAR
 
   //EMPIEZAN A VERIFICAR ALARMAS POR TIEMPO DE PUERTA ABIERTA
   // PUERTA 1
   if (VALUE_DOOR_1)
   {
-    if (*timerOpenDoorTimeAlarm1Pointer == 0){
+    if (timerOpenDoorTimeAlarm1 == 0){
       flagTimerOpenDoorTimeAlarm1Pointer = true;
       alarmOn = true;
       _modbusTCPServer->holdingRegisterSetBit(338, 5);
@@ -603,13 +279,13 @@ Chamber::alarms()
   }
   else
   {
-    *timerOpenDoorTimeAlarm1Pointer = MAX_TIME_OPEN_DOOR_1;
+    timerOpenDoorTimeAlarm1 = MAX_TIME_OPEN_DOOR_1;
   } 
-  
+
   // PUERTA 2
   if (VALUE_DOOR_2)
   {
-    if (*timerOpenDoorTimeAlarm2Pointer == 0){
+    if (timerOpenDoorTimeAlarm2 == 0){
       flagTimerOpenDoorTimeAlarm2Pointer = true;
       alarmOn = true;
       _modbusTCPServer->holdingRegisterSetBit(338, 6);
@@ -620,21 +296,12 @@ Chamber::alarms()
   }
   else
   {
-    *timerOpenDoorTimeAlarm2Pointer = MAX_TIME_OPEN_DOOR_2;
+    timerOpenDoorTimeAlarm2 = MAX_TIME_OPEN_DOOR_2;
   } 
   //FINALIZAN VERIFICACION ALARMA POR TIEMPO DE PUERTA ABIERTA
 
 }
 
-
-
-
-
-
-
-
-
-  ////
 
 Chamber::writeToEeprom()
 {
@@ -693,1206 +360,46 @@ Chamber::writeToEeprom()
   //  }
 }
 
-Chamber::temperatureControl()
-{    
-  ///// Temperature external control selected /////
-  if (autoSelectorValue &&
-      _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) &&
-      alarmSensorTemp1 == false && alarmSensorTemp2 == false && 
-      flagEnableControlSystemTemperatureExternal)
-  {
-
-    ///////// Prepare the external equipment to work //////////
-    //Prepare to warm up
-    if (calculatedSensorValues[SensorOuputTemperatureValuePos] <
-        (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) -
-         _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 26)))
-    {
-
-      digitalWrite(CONTROL_COOLING_REQUEST, LOW);
-      digitalWrite(CONTROL_HEATING_REQUEST, HIGH);
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 8);
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 9);
-    }
-    //Prepapare to cool down
-    if (calculatedSensorValues[SensorOuputTemperatureValuePos] >
-        (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) +
-         _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 28)))
-    {
-      digitalWrite(CONTROL_HEATING_REQUEST, LOW);
-     
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 9);
-      /////////////////
-      if(flag)
-      {
-      digitalWrite(CONTROL_COOLING_REQUEST, HIGH);
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 8);
-      }
-      else
-      {
-      digitalWrite(CONTROL_COOLING_REQUEST, LOW);
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 8);  
-      }
-      //////////////////
-
-      if(flaghabilitado=1&&flagforzado=0)
-      {
-      digitalWrite(CONTROL_COOLING_REQUEST, LOW);
-      }
-
-      ///////////
 
 
 
-
-
-    }
-    //////////////////////////////////////////////////
-
-    ///////////// Temperature control/////////////////
-    /////Heating activation//////
-    if ((calculatedSensorValues[SensorOuputTemperatureValuePos] <=
-         _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) -
-         _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 22)) &&
-        digitalRead(EXT_HEATER_AVAILABLE))
-    {
-      digitalWrite(HEATING_REQUEST, HIGH);
-
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 13);
-    }
-
-    if (!digitalRead(EXT_HEATER_AVAILABLE))
-    {
-      digitalWrite(HEATING_REQUEST, LOW);
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 13);
-    }
-
-    ////Cooling activation////
-    if ((calculatedSensorValues[SensorOuputTemperatureValuePos] >=
-         _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) +
-         _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 24)) &&
-        digitalRead(EXT_COOLER_AVAILABLE))
-    {
-      digitalWrite(COOLING_REQUEST, HIGH);
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 12);
-      Serial.println("Activado El Ciclo Enfriado");
-    }
-
-    if (!digitalRead(EXT_COOLER_AVAILABLE))
-    {
-      digitalWrite(COOLING_REQUEST, LOW);
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 12);
-    }
-
-    ///// Stop the actions when temeperature is inside range////
-    if ((calculatedSensorValues[SensorOuputTemperatureValuePos] >
-         (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) -
-          _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 26))) &&
-        (calculatedSensorValues[SensorOuputTemperatureValuePos] <
-         (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) +
-          _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 28))))
-    {
-      digitalWrite(HEATING_REQUEST, LOW);
-      digitalWrite(COOLING_REQUEST, LOW);
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 12);
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 13);
-    }
-    ////////////////////////////////////////////////////
-
-    //////// Control the input signal between systems////////
-
-    if (digitalRead(EXT_HEATER_AVAILABLE))
-    {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 11);
-    }
-    else
-    {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 11);
-    }
-
-    if (digitalRead(EXT_COOLER_AVAILABLE))
-    {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 10);
-    }
-    else
-    {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 10);
-    }
-
-    if (digitalRead(HEATER_ACTIVATED))
-    {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 15);
-    }
-    else
-    {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 15);
-    }
-
-    if (digitalRead(COOLER_ACTIVATED))
-    {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 14);
-    }
-    else
-    {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 14);
-    }
-
-    if (digitalRead(DEFROST_CYCLE))
-    {
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 251, 0);
-    }
-    else
-    {
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 251, 0);
-    }
-
-    ///////////////////////////////////////////////////
-  }
-  else
-  {
-
-    ////Swicht off all acctions and requests////
-    digitalWrite(HEATING_REQUEST, LOW);
-    digitalWrite(COOLING_REQUEST, LOW);
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 13);
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 12);
-
-    digitalWrite(CONTROL_HEATING_REQUEST, LOW);
-    digitalWrite(CONTROL_COOLING_REQUEST, LOW);
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 9);
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 8);
-  }
-
-  ////// Heating with aeroheaters //////
-  if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) &&
-      alarmSensorTemp1 == false && alarmSensorTemp2 == false &&
-      flagEnableControlSystemTemperatureAerotermo)
-  {
-    if (calculatedSensorValues[SensorOuputTemperatureValuePos] <=
-        _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) -
-        _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 22))
-    {
-      if(flag)
-      {
-      digitalWrite(AEROHEATERS, HIGH);
-
-      uint16_t value = _modbusTCPServer->holdingRegisterRead(addressOffset + 259);
-      value |= 0xFF;
-      _modbusTCPServer->holdingRegisterWrite(addressOffset + 259, value);
-      }
-      else
-      {}
-    }
-
-    if (calculatedSensorValues[SensorOuputTemperatureValuePos] >=
-        _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) -
-        _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 26))
-    {
-
-      digitalWrite(AEROHEATERS, LOW);
-      uint16_t value = _modbusTCPServer->holdingRegisterRead(addressOffset + 259);
-      value &= ~0xFF;
-      _modbusTCPServer->holdingRegisterWrite(addressOffset + 259, value);
-    }
-  }
-  else
-  {
-    digitalWrite(AEROHEATERS, LOW);
-    uint16_t value = _modbusTCPServer->holdingRegisterRead(addressOffset + 259);
-    value &= ~0xFF;
-    _modbusTCPServer->holdingRegisterWrite(addressOffset + 259, value);
-
-  }
-
-  //////////////////////////////////////
+void Chamber::readOutputFan1(double medidaSensor){
+  _mapsensorReadOutputFan1->mapFloatMeasurementSensor(medidaSensor);
+  calculatedSensorValuesOutputFan1 = _mapsensorReadOutputFan1->getValueSensor(); //------------calculatedSensorValues[SensorOutputFan1ValuePos]
 }
 
-Chamber::humidityControl(int *humidityInyectionTimesPointer, bool *humidityInyectionStatusPointer)
+
+void Chamber::readOutputFan2(double medidaSensor){
+  _mapsensorReadOutputFan2->mapFloatMeasurementSensor(medidaSensor);
+  calculatedSensorValuesOutputFan2 = _mapsensorReadOutputFan2->getValueSensor(); //------------calculatedSensorValues[SensorOutputFan2ValuePos]
+}
+
+
+Chamber::measurements()
 {
-  /*BEGIN CONDITION ENABALE CONTROL SYSTEM HUMIDITY*/
-    //Si la cámara está activa regula la humedad y si no desactiva las electroválvulas
-    if (autoSelectorValue &&
-        !_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1) &&
-        _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) &&
-        alarmSensorHumidity1 == false && alarmSensorHumidity2 == false &&
-        flagEnableControlSystemHumidity)
-    {
-      float relativeError = (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 14) -
-                            _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 266)) /
-                            _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 14);
-      
-
-      if (relativeError >=
-          (1.0 - (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 137) / 100.0)))
-      {
-        
-        humidityPID->SetMode(MANUAL);
-        digitalWrite(HUMIDITY_WATER_VALVES, HIGH);
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 0);
-        
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 336, 0);
-        pidCycleControlHumidity = 1;
-        humidityCycleTOn = 600;
-        humidityCycleTOff = 10;
-      }
-      else if (relativeError <= 0)
-      {
-        
-        humidityPID->SetMode(MANUAL);
-        digitalWrite(HUMIDITY_WATER_VALVES, LOW);
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 0);
-        
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 336, 0);
-        pidCycleControlHumidity = 0;
-      }
-      else
-      {
-        humidityPID->SetMode(AUTOMATIC);
-        pidCycleControlHumidity = 1;
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 0);
-      
-
-      humidityPID->SetTunings((double)_modbusTCPServer->holdingRegisterRead(addressOffset + 43) / CONST_DIVISION_KP_HUMIDITY,
-                              (double)_modbusTCPServer->holdingRegisterRead(addressOffset + 44) / CONST_DIVISION_KI_HUMIDITY,
-                              (double)_modbusTCPServer->holdingRegisterRead(addressOffset + 45) / CONST_DIVISION_KD_HUMIDITY);
-
-
-
-      humidityPID->SetOutputLimits(OUTPUT_HUMIDITY_LIMITS_MIN, _modbusTCPServer->holdingRegisterRead(addressOffset + 139));
-      valueHumiditySetpointNormalization = _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 14) / CONST_NORMALIZATION_HUMIDITY_PID;
-      humidityPID->Compute();
-
-      
-      humidityCycleTOn = (int)humidityPIDOutput;
-      humidityCycleTOff = _modbusTCPServer->holdingRegisterRead(addressOffset + 139) -
-                          (int)humidityPIDOutput;
-
-      //------Funcion que ejecuta si esta activo el debuger----------
-      debugControlHumidity();
-      //----------------
-      
-      if (pidCycleControlHumidity == 1 && humidityPIDOutput >= 2)
-      {
-
-          if (*(humidityInyectionTimesPointer + *humidityInyectionStatusPointer) <= 0)
-          {
-            if (*humidityInyectionStatusPointer <= 0)
-            {
-              *(humidityInyectionTimesPointer + 1) = humidityCycleTOn;
-              *humidityInyectionTimesPointer = humidityCycleTOff;
-            }
-
-            *humidityInyectionStatusPointer ^= 1;
-
-            digitalWrite(HUMIDITY_WATER_VALVES, *humidityInyectionStatusPointer);
-            
-          }
-        
-      }
-      else
-      {      
-        humidityPID->SetMode(MANUAL);
-        digitalWrite(HUMIDITY_WATER_VALVES, LOW);
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 0);
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 336, 0);
-        pidCycleControlHumidity = 0;
-      }
-      }
-    }
-    else
-    {
-      humidityPID->SetMode(MANUAL);
-      digitalWrite(HUMIDITY_WATER_VALVES, LOW);
-      pidCycleControlHumidity = 0;
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 0);
-    }
-    
-  /*END CONDITION ENABALE CONTROL SYSTEM HUMIDITY*/
-}
-
-Chamber::ethyleneControl(int *ethyleneInyectionTimesPointer, bool *ethyleneInyectionStatusPointer)
-{
-   
-  /*BEGIN CONDITION ENABALE CONTROL SYSTEM ETHYLENE*/
-
-    ////////////////////Modo desverdizado activo///////////////////////
-    //Modo trabajo desverdización
-    if ( _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ) 
-            //Cámara en marcha
-    {
-
-      /////////////////Bloque control por PID//////////////////////////
-      if (!_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1) &&
-          _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 4))
-      {
-        if(alarmSensorEthyl1 == false && alarmSensorEthyl2 == false  &&
-          flagEnableControlSystemEthylene) //Control por análisis activo
-        {
-          //Serial.println("Analysis");
-
-          float relativeError = (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18) -
-                                _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 262)) /
-                                _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18);
-
-          if (relativeError >= (1 - (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 140) / 100)))
-          {
-            
-            ethylenePID->SetMode(MANUAL);
-            analogOutputModule1Values[2] = ETHYLENE_PID_OPEN;
-            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 1);
-            
-          }
-          else if (relativeError <= (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 140) / 100) - 1)
-          {
-            
-            ethylenePID->SetMode(MANUAL);
-            analogOutputModule1Values[2] = ETHYLENE_PID_CLOSE;
-            _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
-            
-            
-          }
-          else
-          {
-            
-            ethylenePID->SetMode(AUTOMATIC);
-            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 1);
-            
-            ethyleneSetpoint = (double)_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18);
-            valueEthyleneSetpointNormalization = ethyleneSetpoint / CONST_NORMALIZATION_ETHYLENE_PID;
-
-            
-
-            ethylenePID->SetTunings(KP_ETHYLENE_PID, KI_ETHYLENE_PID, KD_ETHYLENE_PID);
-
-            
-            ethylenePID->Compute();
-            analogOutputModule1Values[2] = ethylenePIDOutput;
-            
-
-            ValidationPIDControlethylene.valor = ethylenePIDOutput;
-
-            ValidationPID(&ValidationPIDControlethylene, ETHYLENE_PID_LIMIT_MIN);
-
-            
-            if (ValidationPIDControlethylene.flag)
-            {
-              analogOutputModule1Values[2] = ETHYLENE_PID_CLOSE;
-              _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
-              
-            }
-
-            //------Funcion que ejecuta si esta activo el debuger----------
-            debugControlEthylene();
-            //----------------
-          }
-          
-        }
-        else
-        {
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 4);
-        }
-      }
-
-      ///////////////////////Fin bloque de control por análisis//////////////////////////
-
-    }
-    else
-    {
-      ethylenePID->SetMode(MANUAL);
-      analogOutputModule1Values[2] = 4000;
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
-      
-    }
-
-  /*END CONDITION ENABALE CONTROL SYSTEM ETHYLENE*/
-}
-
-Chamber::CO2Control(int *timerInitializationFanPointer)
-{
-
-  //Si la cámara está en marcha regula el CO2 y si no desactiva la regulación
-  if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ||
-      alarmSensorCO21 == false || alarmSensorCO22 == false || 
-      (!flagEnableControlSystemCO2OnOff && !flagEnableControlSystemCO2Pid))  //Cámara en marcha
-  {
-
-    /////////////////////////Control de CO2 por consigna//////////////////////////
-    if (!_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 5) &&
-        flagEnableControlSystemCO2OnOff) //Control de CO2 por consigna habilitado
-    {
-      if (calculatedSensorValues[SensorOuputCo2ValuePos] >=
-          _modbusTCPServer->holdingRegisterRead(addressOffset + 21))
-      {
-        analogOutputModule1Values[0] = 20000;
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2);
-        analogOutputModule1Values[1] = 20000;
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 3);
-
-        digitalWrite(INPUT_FAN_1, HIGH);
-        digitalWrite(OUTPUT_FAN_1, HIGH);
-        digitalWrite(INPUT_FAN_2, HIGH);
-        digitalWrite(OUTPUT_FAN_2, HIGH);
-      }
-
-      if (calculatedSensorValues[SensorOuputCo2ValuePos] <=
-          _modbusTCPServer->holdingRegisterRead(addressOffset + 20))
-      {
-
-        analogOutputModule1Values[0] = 4000;
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2);
-        analogOutputModule1Values[1] = 4000;
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);
-
-        digitalWrite(INPUT_FAN_1, LOW);
-        digitalWrite(OUTPUT_FAN_1, LOW);
-        digitalWrite(INPUT_FAN_2, LOW);
-        digitalWrite(OUTPUT_FAN_2, LOW);
-      }
-    }
-    /////////////////////Final Control de CO2 por consigna////////////////////////
-
-    //////////////////////////Control del CO2 por PID/////////////////////////////
-    if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 5) &&
-        flagEnableControlSystemCO2Pid)
-    {
-      //Si la medida es menor que el límite inferior se desconecta el PID
-      
-      if (calculatedSensorValues[SensorOuputCo2ValuePos] <= _modbusTCPServer->holdingRegisterRead(addressOffset + 20))
-      {
-        CO2PID->SetMode(MANUAL);
-        analogOutputModule1Values[0] = 4000;
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2);
-        analogOutputModule1Values[1] = 4000;
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);
-        
-        digitalWrite(INPUT_FAN_1, LOW);
-        digitalWrite(OUTPUT_FAN_1, LOW);
-        digitalWrite(INPUT_FAN_2, LOW);
-        digitalWrite(OUTPUT_FAN_2, LOW);
-      }
-      else
-      {
-        
-        if(flag)
-        {digitalWrite(INPUT_FAN_1, HIGH);
-        }
-        else
-        {
-        digitalWrite(INPUT_FAN_1, LOW);
-    
-        }
-
-
-
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2);
-        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 3);
-       // digitalWrite(INPUT_FAN_1, HIGH);
-        digitalWrite(OUTPUT_FAN_1, HIGH);
-        digitalWrite(INPUT_FAN_2, HIGH);
-        digitalWrite(OUTPUT_FAN_2, HIGH);
-
-        CO2PID->SetMode(AUTOMATIC);
-
-    
-        CO2PID->SetTunings(KP_CO2_PID, KI_CO2_PID, KD_CO2_PID, 1);
-
-        CO2Setpoint = (double)_modbusTCPServer->holdingRegisterRead(addressOffset + 21);
-        valueCO2SetpointNormalization = CO2Setpoint / CONST_NORMALIZATION_CO2_PID; // linea nueva
-
-      
-        CO2PID->Compute();
-
-        analogOutputModule1Values[0] = CO2PIDOutput;
-        analogOutputModule1Values[1] = CO2PIDOutput;
-
-        ValidationPIDCO2.valor = CO2PIDOutput;
-        ValidationPID(&ValidationPIDCO2, PID_CO2_CONTROL_MIN);
-        
-        
-
-        if (ValidationPIDCO2.flag)
-        {
-          analogOutputModule1Values[0] = CO2_PID_CLOSE;
-          analogOutputModule1Values[1] = CO2_PID_CLOSE;
-          _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
-          
-        }
-        
-       
-      }
-
-      }
-    }
-    else
-    {
-        CO2PID->SetMode(MANUAL);
-        analogOutputModule1Values[0] = 4000;
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2);
-        analogOutputModule1Values[1] = 4000;
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);
-        digitalWrite(INPUT_FAN_1, LOW);
-        digitalWrite(OUTPUT_FAN_1, LOW);
-        digitalWrite(INPUT_FAN_2, LOW);
-        digitalWrite(OUTPUT_FAN_2, LOW);
-    }
-    ///////////////////////Final Control del CO2 por PID//////////////////////////  
-
-
-  }
-  else
-  {
-    CO2PID->SetMode(MANUAL);
-    ethyleneFlowRateCO2Control = 0;
-    analogOutputModule1Values[0] = 4000;
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2);
-    analogOutputModule1Values[1] = 4000;
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);
-    
-    digitalWrite(INPUT_FAN_1, LOW);
-    digitalWrite(OUTPUT_FAN_1, LOW);
-    digitalWrite(INPUT_FAN_2, LOW);
-    digitalWrite(OUTPUT_FAN_2, LOW);
-  }
-/*END CONDITION ENABALE CONTROL SYSTEM CO2*/
-}
-
-Chamber::ethyleneFlowRateControl()
-{  
-/**
- * Codigo Nuevo
- * 
-*/
-//Habilitado de etileno
-  /*BEGIN CONDITION ENABALE CONTROL SYSTEM ETHYLENE*/
-    // Entrada modo trabajo desverdizacion
-  
-  
-  if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0))
-  {
-    if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1))     
-    {
-      modoConservacion();//Entrada en modo Conservacion
-    }
-    else //Entrada en modo Desverdizacion
-    {
-      modoDesverdizacion();
-    }
-    if(!flagEnableControlSystemEthylene && !flagEnableControlSystemEthyleneFlow) 
-    {
-      ethylenePID->SetMode(MANUAL);
-      analogOutputModule1Values[2] = 4000;
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
-    }
-  }
-  else
-  {
-  ethylenePID->SetMode(MANUAL);
-  analogOutputModule1Values[2] = 4000;
-  _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
-  }
-
-
-
-/**
- * 
- * fin de codigo nuevo
-*/
-}
-
-Chamber::readTemp()
-{
-
-  int LowLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 75);
-  int HighLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 76);
-  int zeroSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 77);
-  int spanSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 78);
-  int filteredMeasure = filterTemp->update(rawValueInputModule1[2]);
-  calculatedSensorValues[SensorOuputTemperatureValuePos] = mapFloat(filteredMeasure, zeroSensor1, spanSensor1, LowLimit1, HighLimit1);
-  _modbusTCPServer->holdingRegisterWriteFloat((addressOffset + 270), calculatedSensorValues[SensorOuputTemperatureValuePos]);
-  
-}
-
-Chamber::readHumidity()
-{
-  int LowLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 79);
-  int HighLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 80);
-  int zeroSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 81);
-  int spanSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 82);
-  int filteredMeasure = filterHum->update(rawValueInputModule1[3]);
-  calculatedSensorValues[SensorOuputHumidityValuePos] = mapFloat(filteredMeasure, zeroSensor1, spanSensor1, LowLimit1, HighLimit1);
-
-  valueHumidityNormalization = calculatedSensorValues[SensorOuputHumidityValuePos] / CONST_NORMALIZATION_HUMIDITY_PID;
-
-  _modbusTCPServer->holdingRegisterWriteFloat(addressOffset + 266, calculatedSensorValues[SensorOuputHumidityValuePos]);
-  
-}
-
-Chamber::readEthylene()
-{
-  int LowLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 83);
-  int HighLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 84);
-  int zeroSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 85);
-  int spanSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 86);
-  int filteredMeasure = filterEthyl->update(rawValueInputModule1[1]);
-  calculatedSensorValues[SensorOuputEthyleneValuePos] = mapFloat(filteredMeasure, zeroSensor1, spanSensor1, LowLimit1, HighLimit1);
-
-  //Normalizacion
-  valueEthyleneNormalization = calculatedSensorValues[SensorOuputEthyleneValuePos] / CONST_NORMALIZATION_ETHYLENE_PID;
-  _modbusTCPServer->holdingRegisterWriteFloat(addressOffset + 262, calculatedSensorValues[SensorOuputEthyleneValuePos]);
-  
-}
-
-Chamber::readCO2()
-{
-
-  int LowLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 87);
-  int HighLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 88);
-  int zeroSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 89);
-  int spanSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 90);
-  int filteredMeasure = filterCO2->update(rawValueInputModule1[0]);
-  calculatedSensorValues[SensorOuputCo2ValuePos] = mapFloat(filteredMeasure, zeroSensor1, spanSensor1, LowLimit1, HighLimit1);
-  _modbusTCPServer->holdingRegisterWriteFloat(addressOffset + 264, calculatedSensorValues[SensorOuputCo2ValuePos]);
-
-  //Normalizacion
-  valueCO2Normalization = calculatedSensorValues[SensorOuputCo2ValuePos] / CONST_NORMALIZATION_CO2_PID;
-  //
-
-}
-
-Chamber::readEthyleneFlowRate()
-{
-  int rawMeasure = analogRead(ETHYLENE_FLOW_IN);
-
-  int filterMeasure = filterEthylFlow->update(rawMeasure);
-  
-  int LowLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 115);
-  int HighLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 116);
-  int zeroSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 117);
-  int spanSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 118);
-  calculatedSensorValues[SensorOuputEthyleneFlowValuePos] = mapFloat(filterMeasure,
-                                       zeroSensor1,
-                                       spanSensor1,
-                                       LowLimit1,
-                                       HighLimit1);
-  _modbusTCPServer->holdingRegisterWriteFloat(addressOffset + 274, calculatedSensorValues[SensorOuputEthyleneFlowValuePos]);
-  
-  valueEthyleneFlowNormalization = calculatedSensorValues[SensorOuputEthyleneFlowValuePos]  / CONST_NORMALIZATION_ETHYLENE_FLOW_PID;
-}
-
-Chamber::readOutputFan1()
-{
-  int LowLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 119);
-  int HighLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 120);
-  int zeroSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 121);
-  int spanSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 122);
-  calculatedSensorValues[SensorOutputFan1ValuePos] = mapFloat(analogRead(OUTPUT_FAN_PHASE_1),
-                                       zeroSensor1,
-                                       spanSensor1,
-                                       LowLimit1,
-                                       HighLimit1);
-
-  
-  _modbusTCPServer->holdingRegisterWriteFloat(addressOffset + 285, calculatedSensorValues[SensorOutputFan1ValuePos]);
-}
-
-Chamber::readOutputFan2()
-{
-  int LowLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 123);
-  int HighLimit1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 124);
-  int zeroSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 125);
-  int spanSensor1 = _modbusTCPServer->holdingRegisterRead(addressOffset + 126);
-  calculatedSensorValues[SensorOutputFan2ValuePos] = mapFloat(analogRead(OUT_FAN_PHASE_2),
-                                       zeroSensor1,
-                                       spanSensor1,
-                                       LowLimit1,
-                                       HighLimit1);
-  _modbusTCPServer->holdingRegisterWriteFloat(addressOffset + 289, calculatedSensorValues[SensorOutputFan2ValuePos]);
-}
-
-Chamber::getMeasurements()
-{
-  readTemp();
-  readHumidity();
-  readEthylene();
-  readCO2();
-  readEthyleneFlowRate();
-  readOutputFan1();
-  readOutputFan2();
-}
-
-Chamber::getRawValues1()
-{
-  _modbusTCPClient1->requestFrom(HOLDING_REGISTERS, 40, 8);
-
-  int counter = 0;
-  while (_modbusTCPClient1->available())
-  {
-    rawValueInputModule1[counter] = _modbusTCPClient1->read();
-    counter++;
-  }
+  readOutputFan1(analogRead(OUTPUT_FAN_PHASE_1));
+  readOutputFan2(analogRead(OUT_FAN_PHASE_2));
 }
 
 
-
-
-
-///------------------------------------------------------------------------
-/**
- * @brief modoDesverdizacion 
-*/
-void Chamber::modoDesverdizacion()
-{
-  //
-  //Serial.print("Balance de gases :"); Serial.println(!_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 4));
-  //Serial.print("flagEnableControlSystemEthyleneFlow :"); Serial.println(flagEnableControlSystemEthyleneFlow);
-  
-  if (!_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 4) //si balance de gases activado
-          && flagEnableControlSystemEthyleneFlow) //SI las alarmas saltan entra en balance de gases
-      {
-        //
-        //Serial.print("Hay modificaciones del PID:"); Serial.println(_modbusTCPServer->holdingRegisterReadBit(addressOffset + 250, 4));
-        //Hay modificaciones del PID        
-        if(_modbusTCPServer->holdingRegisterReadBit(addressOffset + 250, 4))
-        { //inyecion inicial inicializacion
-
-          //Pone activador inyección inicial etileno a 0
-          _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 4);
-                   
-          // Inicio de conservacion de ciclo activado
-          //Paramos inyeccion por mantenimiento
-          _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 2); 
-
-          //Este es el timer de inyección le cargamos el valor de inyección inicial
-          //*(ethyleneInyectionTimesPointer + 1) = _modbusTCPServer->holdingRegisterRead(addressOffset + 59);
-          setTimerIntEthyleneFlow(_modbusTCPServer->holdingRegisterRead(addressOffset + 59));
-          //Este es el timer de tiempo sin inyectar le cargamos el valor de 0
-          //*ethyleneInyectionStatusPointer = 0;
-          estadoModoDesverdizacion = MODO_INYECCION_INICIAL;
-          desiredEthyleneFlowRate = 0;
-          double baseEthyleneFlowRate = formulaInyecionInicial(REF_C2H4,CHAMBER_VOLUMEN); 
-          
-          
-          _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 4);
-          _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 1);
-          
-          desiredEthyleneFlowRate += baseEthyleneFlowRate; 
-          
-          //---------------
-          
-          //Esto genera una orden para que se imprime en el debug
-          //Serial.print("Modo Desverdizacion :"); Serial.println(estadoModoDesverdizacion);
-          debugEstadoModoDesverdizacion = MODO_DESVERDIZACION;
-          
-         
-        }
-        
-        switch (estadoModoDesverdizacion)
-        {
-        case MODO_INYECCION_INICIAL:          
-          
-          //Serial.print("desiredEthyleneFlowRate :"); Serial.println(String(desiredEthyleneFlowRate, 4));
-          if(getTimerIntEthyleneFlow()==0){
-            estadoModoDesverdizacion = MODO_INYECCION_MANTENIMIENTO;
-            //Iniciamos inyeccion por mantenimiento
-            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 2); 
-            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 4);
-            //Serial.print("Pasa a Modo Desverdizacion :"); Serial.println(estadoModoDesverdizacion);
-          }
-
-         
-          //Esto genera una orden para que se imprime en el debug
-           //Serial.println("Ejecutando MODO_INYECCION_INICIAL");
-          debugEstadoModoDesverdizacion = MODO_INYECCION_INICIAL; 
-          
-          break;
-
-        case MODO_INYECCION_MANTENIMIENTO:
-        
-          
-          //Esto genera una orden para que se imprime en el debug
-          //Serial.println("Ejecutando MODO_INYECCION_MANTENIMIENTO");
-          debugEstadoModoDesverdizacion = MODO_INYECCION_MANTENIMIENTO; 
-
-          if(INICIO_CICLO_MODO_MANTENIMIENTO){
-            
-            if(!START2)
-            {
-              
-              CLEAR_FINAL_INJECTION_MESSAGE_ACTIVATED;
-              desiredEthyleneFlowRate = 0;
-              CLEAR_FANOUT_ACTIVATED;
-              inyeccionPorPuerta01();
-              inyeccionPorPuerta02();
-              inyeccionPorVentiladoresCO2();
-              inyeccionPorFuga();
-            }
-            
-          }
-          break;
-        
-        default:
-          break;
-        }
-        //Aplico PID
-        valueEthyleneFlowSetpointNormalization = desiredEthyleneFlowRate / CONST_NORMALIZATION_ETHYLENE_FLOW_PID; 
-        //Serial.println("---------------------------------------------");
-        //Serial.print("Entrada valueEthyleneFlowNormalization : "); Serial.println(valueEthyleneFlowNormalization);
-        //Serial.print("valueEthyleneFlowSetpointNormalization  :"); Serial.println(valueEthyleneFlowSetpointNormalization);
-        
-        
-        ethyleneFlowPID->SetMode(AUTOMATIC);
-        ethyleneFlowPID->SetTunings(KP_ETHYLENE_FLOW_PID,KI_ETHYLENE_FLOW_PID,KD_ETHYLENE_FLOW_PID);
-        ethyleneFlowPID->Compute();
-        analogOutputModule1Values[2] = ethyleneFlowPIDOutput;
-
-        ValidationPIDFlowethylene.valor = ethyleneFlowPIDOutput;
-
-        ValidationPID(&ValidationPIDFlowethylene,ETHYLENE__FLOW_PID_LIMIT_MIN);
-        if (ValidationPIDFlowethylene.flag)
-        {
-          analogOutputModule1Values[2] = ETHYLENE__FLOW_PID_LIMIT_CLOSE;
-        }
-
-         //------Funcion que ejecuta si esta activo el debuger----------
-        debugControlEthyleneFlow();
-        //------------------------------------------------------------
-
-        
-        
-      }
-      //else{
-        //----------------------------
-      //  ethyleneFlowPID->SetMode(MANUAL);
-      //  if (!_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 4))
-      //  {
-      //    analogOutputModule1Values[2] = ethylenePIDLimitMinClose;
-      //  }
-      //} 
-}
-
-
-/**
- * @brief Inyeccion por puerta 01
-*/
-void Chamber::inyeccionPorPuerta01(){
-         /////Inyección por puerta 1 abierta con detección de flanco de subida/////
-        if (VALUE_DOOR_1)
-        {
-          // si hay un flanco de subida
-          if (gateRaise1)
-          {
-            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 6);
-            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 5);   
-            //*ethyleneInyectionTimesPointer -= _modbusTCPServer->holdingRegisterRead(addressOffset + 62); //tiempo de inyeccion deteccion de puertas
-            //*(ethyleneInyectionTimesPointer + 1) += _modbusTCPServer->holdingRegisterRead(addressOffset + 62);
-            setTimerOnDoor01EthyleneFlow(_modbusTCPServer->holdingRegisterRead(addressOffset + 62));
-            gateRaise1 = 0;
-            //falta una bandera
-            Serial.println("Inyeccion Puerta 1 activado");
-          }
-        }
-        else
-        {
-          _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 6);
-          gateRaise1 = 1;
-        }
-
-        if(getTimerOnDoor01EthyleneFlow()>0){
-          double baseEthyleneFlowRate = (1.5 * _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18) *
-                                          _modbusTCPServer->holdingRegisterRead(addressOffset + 10)) / 1500;
-
-          desiredEthyleneFlowRate += baseEthyleneFlowRate; // asigno mi nuevo setpoint
-          _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 1);
-
-          //
-          Serial.print("tiempo de inyeccion 10s p1 :"); Serial.println(getTimerOnDoor01EthyleneFlow());
-          Serial.print("baseEthyleneFlowRate  p1 :"); Serial.println(baseEthyleneFlowRate);
-          Serial.print("desiredEthyleneFlowRate p1 :"); Serial.println(desiredEthyleneFlowRate);
-        }   
-}
-
-/**
- * @brief Inyeccion por puerta 02
-*/
-void Chamber::inyeccionPorPuerta02(){
-  /////Inyección por puerta 2 abierta con detección de flanco de subida/////
-        if (VALUE_DOOR_2)
-        {
-          if (gateRaise2)
-          {
-            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 7);
-            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 6);
-           // ethyleneInyectionTimesPointer -= _modbusTCPServer->holdingRegisterRead(addressOffset + 62);//tiempo de inyeccion deteccion de puertas
-           // (ethyleneInyectionTimesPointer + 1) += _modbusTCPServer->holdingRegisterRead(addressOffset + 62);
-            setTimerOnDoor02EthyleneFlow(_modbusTCPServer->holdingRegisterRead(addressOffset + 62));
-            gateRaise2 = 0;
-            Serial.println("Inyeccion Puerta 2 activado");
-          }
-        }
-        else
-        {
-          _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 7);
-          gateRaise2 = 1;
-        }
-        if(getTimerOnDoor02EthyleneFlow()>0){
-          double baseEthyleneFlowRate = (1.5 * _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18) *
-                                          _modbusTCPServer->holdingRegisterRead(addressOffset + 10)) / 1500;
-
-            desiredEthyleneFlowRate += baseEthyleneFlowRate; // asigno mi nuevo setpoint
-            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 1);
-
-          //
-          Serial.print("tiempo de inyeccion 10s p2 :"); Serial.println(getTimerOnDoor02EthyleneFlow());
-          Serial.print("baseEthyleneFlowRate  p2 :"); Serial.println(baseEthyleneFlowRate);
-          Serial.print("desiredEthyleneFlowRate p2 :"); Serial.println(desiredEthyleneFlowRate);
-        }  
-}
-
-/**
- * @brief Inyeccion por los ventiladores de CO2
-*/
-void Chamber::inyeccionPorVentiladoresCO2(){
-    // C2H4 control selection && ethyleneFlowRateCO2ControlGasesBalance
-      if (!_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 4))
-      {
-        //-----
-        if (analogOutputModule1Values[0] > PID_CO2_CONTROL_MIN) //Iniciamos la inyección de etileno si
-        { //tenemos los ventiladores en marcha
-          ethyleneFlowRateCO2Control = 1;
-        }
-        else
-        { //no tenemos los ventiladores en marcha
-          ethyleneFlowRateCO2Control = 0;
-        }
-
-        if (ethyleneFlowRateCO2Control)
-        {
-        //-----
-          double airflow = ((double)analogOutputModule1Values[0] +
-                          (double)analogOutputModule1Values[1]) *
-                          (double)_modbusTCPServer->holdingRegisterRead(addressOffset + 136);
-
-          //Calculo para la reglas de las mezclas
-          double ratioConcentration = _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18) /
-                                    _modbusTCPServer->holdingRegisterReadLong(addressOffset + 12);
-
-          double extractionEthyleneFlowRate = ((airflow * ratioConcentration) / (1 - ratioConcentration));
-          desiredEthyleneFlowRate += extractionEthyleneFlowRate; //lo añado al setpoint
-          _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 1);
-          
-          //
-          Serial.print("inyeccion por ventiladores co2 :"); Serial.println(analogOutputModule1Values[0]> PID_CO2_CONTROL_MIN);
-          Serial.print("extractionEthyleneFlowRate :"); Serial.println(extractionEthyleneFlowRate);
-          Serial.print("desiredEthyleneFlowRate :"); Serial.println(String(desiredEthyleneFlowRate, 4));
-          
-        }
-        
-      }
-}
-
-/**
- * @brief Inyeccion por fugas y perdidas
-*/
-void Chamber::inyeccionPorFuga(){
-  //Inyección mantenimiento por fugas
-  if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 2) && (!flagInyeccionPorFuga)) //Si inicio ciclo actico
-  {
-    
-    setTimerOnFugaEthyleneFlow(_modbusTCPServer->holdingRegisterRead(addressOffset + 60));
-    setTimerInyeccionFugaEthyleneFlow(_modbusTCPServer->holdingRegisterRead(addressOffset + 61));
-    flagInyeccionPorFuga = 1;
-    flagIntervaloInyeccionPorFuga = 1;
-  }
-
-  //tiempo de inyeccion
-  if(getTimerOnFugaEthyleneFlow()==0 &&flagIntervaloInyeccionPorFuga){
-
-    
-    if(getTimerInyeccionFugaEthyleneFlow()>0){
-      //Aplico formula
-      
-      double baseEthyleneFlowRate = (1.5 * _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18) *
-                                          _modbusTCPServer->holdingRegisterRead(addressOffset + 10)) / 1500;
-      desiredEthyleneFlowRate += baseEthyleneFlowRate; // asigno mi nuevo setpoint
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 1);
-
-      //
-      Serial.print("inyeccion por fuga :"); Serial.println(getTimerInyeccionFugaEthyleneFlow());
-      Serial.print("baseEthyleneFlowRate :"); Serial.println(baseEthyleneFlowRate);
-      Serial.print("desiredEthyleneFlowRate :"); Serial.println(String(desiredEthyleneFlowRate, 4));
-
-    }
-    else
-    {
-      setTimerInyeccionFugaEthyleneFlow(0);
-      flagInyeccionPorFuga = 0;
-      flagIntervaloInyeccionPorFuga = 0;
-    }
-  }
-}
-
-
-/**
- * @brief modoConservacion
-*/
-void Chamber::modoConservacion()
-{
-
-      ethylenePID->SetMode(MANUAL);
-      analogOutputModule1Values[2] = 4000;
-      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 4);
-      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
-
-      //Serial.println("modo conservacion");
-      
-}
-/** @brief enableControl verifica los estado del holdregister, para activar el sistema de control de Humedad, Co2 y Ethyleno al maximo
-*/
-
-//----> Tarea 2
-void Chamber::enableControl(){
-  
-  //ENABLE TEMPERATURE EXTERNAL
-  if (ENABLE_CONTROL_TEMPERATURE_EXTERNAL)
-  {
-    flagEnableControlSystemTemperatureExternal = 1;
-  }
-  else
-  {
-    flagEnableControlSystemTemperatureExternal = 0;
-  }
-
-  //ENABLE CONTROL TEMPERATURE AEROTERMO
-  if (ENABLE_CONTROL_TEMPERATURE_AEROTERMO)
-  {
-    flagEnableControlSystemTemperatureAerotermo = 1;
-  }
-  else
-  {
-    flagEnableControlSystemTemperatureAerotermo = 0;
-  }
-
-  //ENABLE ETHYLENE
-  if (ENABLE_ETHYLENE)
-  {
-    flagEnableControlSystemEthylene = 1;
-  }
-  else
-  {
-    flagEnableControlSystemEthylene = 0;
-  }
-
-  //Enable HUMIDITY
-  if (ENABLE_CONTROL_HUMIDITY)
-  {
-    flagEnableControlSystemHumidity = 1;
-  }
-  else
-  {
-    flagEnableControlSystemHumidity = 0;
-  }
-  
-
-  //Enable CO2
-  if (ENABLE_CONTROL_CO2)
-  {
-    flagEnableControlSystemCO2 = 1;
-  }
-  else
-  {
-    flagEnableControlSystemCO2 = 0;
-  }
-
-  //Enable CO2 OnOff
-  if (ENABLE_CONTROL_CO2_ON_OFF)
-  {
-    flagEnableControlSystemCO2OnOff = 1;
-  }
-  else
-  {
-    flagEnableControlSystemCO2OnOff = 0;
-  }
-
-  //Enable CO2 PID
-  if (ENABLE_CONTROL_CO2_PID)
-  {
-    flagEnableControlSystemCO2Pid = 1;
-  }
-  else
-  {
-    flagEnableControlSystemCO2Pid = 0;
-  }
-  
-
-  //ENABLE ETHYLENE
-  if (ENABLE_ETHYLENE)
-  {
-    flagEnableControlSystemEthylene = 1;
-  }
-  else
-  {
-    flagEnableControlSystemEthylene = 0;
-  }
-
-  
-
-    
-  
-  
-
-}
 
 /**
  * @brief enableInputOutput verifica los estado del holdregister, para habilitar las entradas y salidas del sistema
 */
 //----> Tarea 2
-void Chamber::enableInputOutput(){
+void Chamber::enable(){
 
-  if(!ENABLE_SAFETY_RELAY_RESET){
-    digitalWrite(SAFETY_RELAY_RESET, LOW);
+  if (!ENABLE_SAFETY_RELAY_RESET)
+  {
+    controlChambersIO.safetyRelayReset = 0;
   }
-
-  if(!ENABLE_INPUT_FAN_1){
-    digitalWrite(INPUT_FAN_1, LOW);
-    analogOutputModule1Values[0] = 4000;
-  }
-
-  if(!ENABLE_OUTPUT_FAN_1){
-    digitalWrite(OUTPUT_FAN_1, LOW);
-    analogOutputModule1Values[0] = 4000;
-  }
-
-  if(!ENABLE_INPUT_FAN_2){
-    digitalWrite(INPUT_FAN_2, LOW);
-    analogOutputModule1Values[1] = 4000;
-  }
-
-  if(!ENABLE_OUTPUT_FAN_2){
-    digitalWrite(OUTPUT_FAN_2, LOW);
-    analogOutputModule1Values[1] = 4000;
-  }
-
-  if(!ENABLE_AEROHEATERS){
-    digitalWrite(AEROHEATERS, LOW);
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 259);// limpieza de uno a uno
-  }
-
-  if(!ENABLE_HUMIDITY_WATER_VALVES){
-    digitalWrite(HUMIDITY_WATER_VALVES, LOW);
-  }
-
-  if(!ENABLE_HUMIDITY_AIR_VALVES){
-    
-  }
-
-  
 
   if(!ENABLE_EVAPORATOR_FAN_ACTIVATOR){
-    digitalWrite(EVAPORATOR_FAN_ACTIVATOR, LOW);
+    controlChambersIO.evaporatorFanActivator = 0; //-------digitalWrite(EVAPORATOR_FAN_ACTIVATOR, LOW);
   }
 
   if(!ENABLE_ALARM_SET){
-    digitalWrite(ALARM_SET, LOW);
+    controlChambersIO.alarmSet = 0; //----- digitalWrite(ALARM_SET, LOW);
   }
 
   if (!ENABLE_AUTOTEL_SELECTOR_HR)
@@ -1904,11 +411,6 @@ void Chamber::enableInputOutput(){
     autoSelectorValue = 1;
   }
 
-  // StateAutoTelSelector
-  this->stateAutoTelSelector();
-  
-
-
 }
 
 
@@ -1917,140 +419,28 @@ void Chamber::enableInputOutput(){
  * @brief forcedControl verifica los estado del holdregister, para forza las salidas de Humedad, Co2 y Ethyleno al maximo
 */
 //----> Tarea 3
-void Chamber::forcedControl()
+void Chamber::forced()
 {
-
-  if(FORCED_SAFETY_RELAY_RESET){
-      //condition
-      digitalWrite(SAFETY_RELAY_RESET, HIGH);
-  }
-  else
+  if (FORCED_SAFETY_RELAY_RESET)
   {
-      digitalWrite(SAFETY_RELAY_RESET, LOW);
+    controlChambersIO.safetyRelayReset = 1;
   }
 
-  if (FORCED_INPUT_FAN_1)
+  if(FORCED_EVAPORATOR_FAN_ACTIVATOR)
   {
-    digitalWrite(INPUT_FAN_1, HIGH);
-    analogOutputModule1Values[0]=20000;
-    
+    controlChambersIO.evaporatorFanActivator = 1; //-------digitalWrite(EVAPORATOR_FAN_ACTIVATOR, LOW);
   }
 
-  if (FORCED_INPUT_FAN_2)
-  {
-    digitalWrite(INPUT_FAN_2, HIGH);
-    analogOutputModule1Values[0]=20000;
+  if(FORCED_ALARM_SET){
+    controlChambersIO.alarmSet = 1; //----- digitalWrite(ALARM_SET, LOW);
   }
 
-  if (FORCED_OUTPUT_FAN_1)
+  if (FORCED_AUTOTEL_SELECTOR_HR)
   {
-    digitalWrite(OUTPUT_FAN_1, HIGH);
-    analogOutputModule1Values[1]=20000;
+    autoSelectorValue = 1;
   }
+
   
-  if (FORCED_OUTPUT_FAN_2)
-  {
-    digitalWrite(OUTPUT_FAN_2, HIGH);
-    analogOutputModule1Values[1]=20000;
-  }
-
-  if (FORCED_AEROHEATERS)
-  {
-    //condition
-    digitalWrite(AEROHEATERS, HIGH);
-    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 259);
-  }
-  
-  if (FORCED_HUMIDITY_WATER_VALVES)
-  {
-    //condition
-    digitalWrite(HUMIDITY_WATER_VALVES, HIGH);
-  }
-
-  if(FORCED_COOLING_REQUEST){
-    //condition
-    digitalWrite(COOLING_REQUEST, HIGH);
-  }  
-                  
-  if(FORCED_HEATING_REQUEST){
-    digitalWrite(HEATING_REQUEST, HIGH);
-  } 
-
-  if(FORCED_CONTROL_COOLING_REQUEST){
-    digitalWrite(CONTROL_COOLING_REQUEST, HIGH);
-
-  }   
-
-  if(FORCED_CONTROL_HEATING_REQUEST){
-    digitalWrite(CONTROL_HEATING_REQUEST, HIGH);
-
-  }   
-
- //if(FORCED_EVAPORATOR_FAN_ACTIVATOR){
-   //condition
-  // digitalWrite(EVAPORATOR_FAN_ACTIVATOR, HIGH);
- //}  
-
- if(FORCED_ALARM_SET){
-  //condition
-  digitalWrite(ALARM_SET, HIGH);
- }
-                      
- if(FORCED_ETHYLENE){
-   analogOutputModule1Values[2]=20000;
- }
-  
-  
-}
-
-//funciones privadas para hacer debuggear en cada uno de los sistemas de control
-
-/* Funciones privadas creadas para debugear cada una de las variables
- que se estan muestreando en la camara tal como humedad, flujo de humedad, temperatura, co2 y c2h4
-*/
-
-
-
-/* funcion para debugear el control de etileno */
-void Chamber::debugControlEthylene(){
-
-  if (debugConsole.ethylene)
-    {
-      unsigned long timeCosoleIn = millis() - debugLastTime.ethylene;
-      if (timeCosoleIn > 1000) //para que se imprima cada 1000ms
-      {
-        debugLastTime.ethylene = millis();
-        //--------------aca se imprime todo lo que quiera
-        Serial.println("-------Console Ethylene-----------------------------------------");
-        Serial.print("ethyleneSetpoint : "); Serial.println(ethyleneSetpoint);
-        Serial.print("Entrada Sensor C2H4 : "); Serial.println(calculatedSensorValues[SensorOuputEthyleneValuePos]);
-        Serial.print("Salida PID ethyleneControl: "); Serial.println(analogOutputModule1Values[2]);
-        Serial.println("-------________________-----------------------------------------");
-      }
-    }
-}
-
-
-/* funcion para debugear el control de temperatura */
-void Chamber::debugControlTemp(){
-  if (debugConsole.temperature)
-  {
-    unsigned long timeConsoleIn = millis();
-    if(timeConsoleIn>1000){//para que se imprima cada 1000ms
-      //--------------aca se imprime todo lo que quiera
-      Serial.println("-------Console temperature -----------------------------");
-      Serial.print("Sensor temperature value : "); Serial.println(calculatedSensorValues[SensorOuputTemperatureValuePos]);
-      Serial.print("Threshold heating activator : "); Serial.println(_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) -
-                                                                     _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 22)) &&
-                                                                     digitalRead(EXT_HEATER_AVAILABLE)));
-      Serial.print("Heating activation : "); Serial.println(HEATING_REQUEST);
-      Serial.print("Threshold cooling activator : "); Serial.println(_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) +
-                                                                     _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 24)) &&
-                                                                     digitalRead(EXT_COOLER_AVAILABLE))
-      Serial.print("Cooling activation : "); Serial.println(COOLING_REQUEST);       
-      Serial.println("-------________________---------------------------------");
-    }
-  }
 }
 
 //Zeta de emergencia
@@ -2063,7 +453,6 @@ void setaEmergency(){
     _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 0);
   }
 }
-
 
 //micro cortes
 //------>Tarea 5
@@ -2081,12 +470,9 @@ void Chamber::atiendeMicroCutsInterrup(unsigend char *mflagMicroCutsPointer){
     }
       *mflagMicroCutsPointer = 0;
     }
-  
-  
 }
 
-//---------> Tarea 5
-
+//-----> Tarea 5
 void Chamber::atiendeGeneralSwitchDetect(void){
 
   if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 3)){
@@ -2114,11 +500,13 @@ void Chamber::atiendeGeneralSwitchDetect(void){
           else
           {
             if(timerMicroCut.timer03 > 0){
-              digitalWrite(SAFETY_RELAY_RESET,HIGH);
+              
+              controlChambersIO.safetyRelayReset = 1; //------digitalWrite(SAFETY_RELAY_RESET,HIGH);
             }
             else
             {
-              digitalWrite(SAFETY_RELAY_RESET,LOW);
+              
+              controlChambersIO.safetyRelayReset = 0; //-----digitalWrite(SAFETY_RELAY_RESET,LOW);
               timerMicroCut = {0,0,0,0};
               // se limpia el 0,3
               _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 3);
@@ -2135,9 +523,9 @@ void Chamber::setupSafetyRelayReset(void){
   if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 3))
   {
     _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 3);
-    digitalWrite(SAFETY_RELAY_RESET, HIGH);
+    controlChambersIO.safetyRelayReset = 1; //------digitalWrite(SAFETY_RELAY_RESET,HIGH);
     delay(1000);
-    digitalWrite(SAFETY_RELAY_RESET,LOW);
+    controlChambersIO.safetyRelayReset = 0; //-----digitalWrite(SAFETY_RELAY_RESET,LOW);
 	  _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 3);
     
   }
@@ -2174,56 +562,6 @@ void Chamber::stateAutoTelSelector(void){
     CLEAR_AUTOTEL_SELECTOR_HR;
   }
 }
-
-  //----------> Tarea 17
-  // indicadoresEstados es la funcion encargada de verficar las Salidas digitales 
-  void Chamber::indicadoresEstados(void){
-    
-
-    //Salida AEROHEATERS
-    if (digitalRead(AEROHEATERS))
-    {
-      INDICATE_HR_STATE_AEROHEATERS_ON;
-    }
-    else
-    {
-      INDICATE_HR_STATE_AEROHEATERS_OFF;
-    }
-
-    //Salida HUMIDITY_WATER_VALVES 
-    if (digitalRead(HUMIDITY_WATER_VALVES ))
-    {
-      INDICATE_HR_STATE_HUMIDITY_WATER_VALVES_ON;
-    }
-    else
-    {
-      INDICATE_HR_STATE_HUMIDITY_WATER_VALVES_OFF;
-    }
-
-    //Salida HEATING_REQUEST 
-    if (digitalRead(HEATING_REQUEST))
-    {
-      INDICATE_HR_STATE_HEATING_REQUEST_ON;
-    }
-    else
-    {
-      INDICATE_HR_STATE_HEATING_REQUEST_OFF;
-    }
-
-    //Salida COOLING_REQUEST 
-    if (digitalRead(COOLING_REQUEST))
-    {
-      INDICATE_HR_STATE_COOLING_REQUEST_ON;
-    }
-    else
-    {
-      INDICATE_HR_STATE_COOLING_REQUEST_OFF;
-    }
-    
-    
-  }
-
-
 
 
 

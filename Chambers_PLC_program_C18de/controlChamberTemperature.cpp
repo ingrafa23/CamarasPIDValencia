@@ -14,7 +14,7 @@ controlChamberTemperature::controlChamberTemperature(ModbusTCPServer *modbusTCPS
 
     //-----------------
     _mapsensor = new mapsensor(&modbusTCPServer,
-                        addressOffset + 270,             // C2h4 flow Measure
+                        addressOffset + 270,             // Measure
                         addressOffset + 75,             // LowLimit1
                         addressOffset + 76,             // HighLimit1
                         addressOffset + 77,             // zeroSensor1
@@ -27,7 +27,14 @@ controlChamberTemperature::controlChamberTemperature(ModbusTCPServer *modbusTCPS
 
 void controlChamberTemperature::setup(){
 
-}
+}  
+
+/**
+ * @brief run es la funcion principal que ejecuta todo el sistema de control de temperatura
+ * @param medidaSensor es el valor de la medida del sensor
+ * @param autoSelectorValue habilita el control de temperatura
+
+*/
 
 void controlChamberTemperature::run(double medidaSensor,bool autoSelectorValue){
     this->readTemperature(medidaSensor);
@@ -35,7 +42,12 @@ void controlChamberTemperature::run(double medidaSensor,bool autoSelectorValue){
     this->TemperatureControl(autoSelectorValue);
     this->enable();
     this->forced();
+    this->writeIO();
     this->stateIndicator();
+
+    this.debugControlTemp();
+
+    
 }
 
 void controlChamberTemperature::enable(){
@@ -62,12 +74,41 @@ void controlChamberTemperature::enable(){
     _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 9);
   }
 
-  
+  if(!ENABLE_AEROHEATERS){
+
+    controlChamberTemperatureIO.Aeroheaters = 0;
+    _modbusTCPServer->holdingRegisterWrite(addressOffset + 259, 0x00);
+  }
 
 }
 
 void controlChamberTemperature::forced(){
+  if(FORCED_COOLING_REQUEST){
+      controlChamberTemperatureIO.CoolingRequest = 1;
+      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 12);
+    
+  }
 
+  if(FORCED_HEATING_REQUEST){
+    controlChamberTemperatureIO.HeatingRequest = 1;
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 13);
+  }
+
+  if(FORCED_CONTROL_COOLING_REQUEST){
+    controlChamberTemperatureIO.ControlCoolingRequest = 1;
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 8);
+    
+  }
+
+  if(FORCED_CONTROL_HEATING_REQUEST){
+    controlChamberTemperatureIO.ControlHeatingRequest = 1;
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 9);
+  }
+
+  if(FORCED_AEROHEATERS){
+    controlChamberTemperatureIO.Aeroheaters = 1;
+    _modbusTCPServer->holdingRegisterWrite(addressOffset + 259, 0xff);
+  }
 }
 
 void controlChamberTemperature::alarm()
@@ -388,7 +429,85 @@ void controlChamberTemperature::readTemperature(double medidaSensor){
 }
 
 void controlChamberTemperature::stateIndicator(void){
+  if (controlChamberTemperatureIO.CoolingRequest)
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 339, 0);
+  }
+  else
+  {
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 339, 0);
+  }
+//----------------------
+  if (controlChamberTemperatureIO.HeatingRequest)
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 15);
+  }
+  else
+  {
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 15);
+  }
+//-------------------------
+  if (controlChamberTemperatureIO.ControlCoolingRequest)
+  {
+    //_modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 9);
+  }
+  else
+  {
+    //_modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 9);
+  }
+//-----------------------
+  if (controlChamberTemperatureIO.ControlHeatingRequest)
+  {
+    //_modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 9);
+  }
+  else
+  {
+    //_modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 9);
+  }
+//----------------------------
+  if (controlChamberTemperatureIO.Aeroheaters)
+  {
+    _modbusTCPServer->holdingRegisterWrite(addressOffset + 259, 0xff)
+  else
+  {
+    _modbusTCPServer->holdingRegisterWrite(addressOffset + 259, 0x00);
+  }
 
+//------------------------------------------------------
+  if (digitalRead(DEFROST_CYCLE))
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 339, 2);
+  }
+  else
+  {
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 339, 2);
+  }
+  
+
+}
+
+//funciones privadas
+
+/* funcion para debugear el control de temperatura */
+void controlChamberTemperature::debugControlTemp(){
+  if (debugConsole.temperature)
+  {
+    unsigned long timeConsoleIn = millis();
+    if(timeConsoleIn>1000){//para que se imprima cada 1000ms
+      //--------------aca se imprime todo lo que quiera
+      Serial.println("-------Console temperature -----------------------------");
+      Serial.print("Sensor temperature value : "); Serial.println(calculatedSensorValues);
+      Serial.print("Threshold heating activator : "); Serial.println(_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) -
+                                                                     _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 22)) &&
+                                                                     digitalRead(EXT_HEATER_AVAILABLE)));
+      Serial.print("Heating activation : "); Serial.println(HEATING_REQUEST);
+      Serial.print("Threshold cooling activator : "); Serial.println(_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) +
+                                                                     _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 24)) &&
+                                                                     digitalRead(EXT_COOLER_AVAILABLE))
+      Serial.print("Cooling activation : "); Serial.println(COOLING_REQUEST);       
+      Serial.println("-------________________---------------------------------");
+    }
+  }
 }
 
 

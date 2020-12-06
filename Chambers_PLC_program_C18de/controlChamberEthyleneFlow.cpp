@@ -128,6 +128,8 @@ void controlChamberEthyleneFlow::run(double medidaSensor,double mvalueCo2_0,doub
     this->forced();
     this->stateIndicator();
 
+
+
 }
 
 
@@ -156,19 +158,23 @@ void controlChamberEthyleneFlow::modoDesverdizacion()
         //
         //Serial.print("Hay modificaciones del PID:"); Serial.println(_modbusTCPServer->holdingRegisterReadBit(addressOffset + 250, 4));
         //Hay modificaciones del PID        
-        if(_modbusTCPServer->holdingRegisterReadBit(addressOffset + 250, 4))
+        if(_modbusTCPServer->holdingRegisterReadBit(addressOffset + 250, 4) && _modbusTCPServer->holdingRegisterReadBit(addressOffset + 338, 7))
         { //inyecion inicial inicializacion
 
           //Pone activador inyección inicial etileno a 0
           _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 4);
+          _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 7);
+          _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 10);
+
                    
           // Inicio de conservacion de ciclo activado
           //Paramos inyeccion por mantenimiento
           _modbusTCPServer->holdingRegisterClearBit(addressOffset + 0, 2); 
 
           //Este es el timer de inyección le cargamos el valor de inyección inicial
-          //*(ethyleneInyectionTimesPointer + 1) = _modbusTCPServer->holdingRegisterRead(addressOffset + 59);
+          
           setTimerIntEthyleneFlow(_modbusTCPServer->holdingRegisterRead(addressOffset + 59));
+          //Serial.print("desiredEthyleneFlowRate :"); Serial.println(String(desiredEthyleneFlowRate, 4));
           //Este es el timer de tiempo sin inyectar le cargamos el valor de 0
           //*ethyleneInyectionStatusPointer = 0;
           estadoModoDesverdizacion = MODO_INYECCION_INICIAL;
@@ -192,20 +198,16 @@ void controlChamberEthyleneFlow::modoDesverdizacion()
         switch (estadoModoDesverdizacion)
         {
         case MODO_INYECCION_INICIAL:          
-          
-          //Serial.print("desiredEthyleneFlowRate :"); Serial.println(String(desiredEthyleneFlowRate, 4));
-          if(getTimerIntEthyleneFlow()==0){
-            estadoModoDesverdizacion = MODO_INYECCION_MANTENIMIENTO;
-            //Iniciamos inyeccion por mantenimiento
-            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 2); 
-            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 4);
-            //Serial.print("Pasa a Modo Desverdizacion :"); Serial.println(estadoModoDesverdizacion);
-          }
-
-         
-          //Esto genera una orden para que se imprime en el debug
-           //Serial.println("Ejecutando MODO_INYECCION_INICIAL");
-          debugEstadoModoDesverdizacion = MODO_INYECCION_INICIAL; 
+            if(getTimerIntEthyleneFlow()==0){
+              estadoModoDesverdizacion = MODO_INYECCION_MANTENIMIENTO;
+              //Iniciamos inyeccion por mantenimiento
+              _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 2); 
+              _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 4);
+              //Serial.print("Pasa a Modo Desverdizacion :"); Serial.println(estadoModoDesverdizacion);
+            }
+            //Esto genera una orden para que se imprime en el debug
+            //Serial.println("Ejecutando MODO_INYECCION_INICIAL");
+            debugEstadoModoDesverdizacion = MODO_INYECCION_INICIAL; 
           
           break;
 

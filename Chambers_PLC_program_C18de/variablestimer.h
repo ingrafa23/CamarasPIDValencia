@@ -54,6 +54,11 @@ extern int timerLimitAlarmTemperature;
 extern int timerGoOffAlarmTemperature;
 ///-------------------
 
+//timer alarmas generales
+extern int timerAlarmNoVentilation;
+extern int timerOpenDoorTimeAlarm1;
+extern int timerOpenDoorTimeAlarm2;
+
 
 extern struct structMicroCut timerMicroCut;
 extern struct structTimer timerInyectionEthyleneFlow;

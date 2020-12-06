@@ -23,23 +23,24 @@
 
 // Macros asosiadas al holdregister para el sistema de control forzado
 // fan 
-#define FORCED_SAFETY_RELAY_RESET               0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 0)
-#define FORCED_INPUT_FAN_1                            _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 1)
-#define FORCED_INPUT_FAN_2                            _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 2)
-#define FORCED_OUTPUT_FAN_1                           _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 3)
-#define FORCED_OUTPUT_FAN_2                           _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 4)
-#define FORCED_AEROHEATERS                      0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 5)
-#define FORCED_HUMIDITY_WATER_VALVES            0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 6)
+#define FORCED_SAFETY_RELAY_RESET               _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 0)
+#define FORCED_INPUT_FAN_1                      _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 1)
+#define FORCED_INPUT_FAN_2                      _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 2)
+#define FORCED_OUTPUT_FAN_1                     _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 3)
+#define FORCED_OUTPUT_FAN_2                     _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 4)
+#define FORCED_AEROHEATERS                      _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 5)
+#define FORCED_HUMIDITY_WATER_VALVES            _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 6)
 
-//#HUMIDITY_AIR_VALVES
-#define FORCED_COOLING_REQUEST                  0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 7)
-#define FORCED_HEATING_REQUEST                  0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 8)
-#define FORCED_CONTROL_COOLING_REQUEST          0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 9)
-#define FORCED_CONTROL_HEATING_REQUEST          0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 10)
-#define FORCED_EVAPORATOR_FAN_ACTIVATOR         0       //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 11)
-#define FORCED_ALARM_SET                        0       //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 12)
-#define FORCED_ETHYLENE                               _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 13)
+#define FORCED_HUMIDITY_AIR_VALVES              _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 14)
+#define FORCED_COOLING_REQUEST                  _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 7)
+#define FORCED_HEATING_REQUEST                  _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 8)
+#define FORCED_CONTROL_COOLING_REQUEST          _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 9)
+#define FORCED_CONTROL_HEATING_REQUEST          _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 10)
+#define FORCED_EVAPORATOR_FAN_ACTIVATOR         _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 11)
+#define FORCED_ALARM_SET                        _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 12)
+#define FORCED_ETHYLENE                         _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 13)
 
+#define FORCED_AUTOTEL_SELECTOR_HR              _modbusTCPServer->holdingRegisterReadBit(addressOffset + 256, 10)
 
 // Macros asociadas al holdregister  inicio de ciclo en balance de gaces -  modo mantenimineto
 #define INICIO_CICLO_MODO_MANTENIMIENTO             1  //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 338, 7)
@@ -48,7 +49,7 @@
 #define CLEAR_FANOUT_ACTIVATED                      _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1)
 
 // Macros asociadas al holdregister para verificar si las entradas o salidas estan HABILITADAS 
-#define ENABLE_SAFETY_RELAY_RESET           _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 17)
+#define ENABLE_SAFETY_RELAY_RESET           _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 13)
 #define ENABLE_INPUT_FAN_1                  _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 5)
 #define ENABLE_OUTPUT_FAN_1                 _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 6)
 #define ENABLE_INPUT_FAN_2                  _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 7)

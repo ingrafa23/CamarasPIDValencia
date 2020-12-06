@@ -47,7 +47,7 @@ private:
 
     }controlChamberTemperatureIO;
 
-    
+    void debugControlTemperature();
 
    
 

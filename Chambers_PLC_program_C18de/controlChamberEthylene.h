@@ -59,6 +59,7 @@ private:
 
     struct StructValidationPID ValidationPIDControlethylene;
 
+
     //Salidas
     struct controlchamberethyleneAnalogOutputModule1
     {

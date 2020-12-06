@@ -28,6 +28,10 @@ int timerLimitAlarmTemperature = 0;
 int timerGoOffAlarmTemperature = 0;
 ///------------------------------
 
+//timer alarmas generales
+int timerAlarmNoVentilation = 0;
+int timerOpenDoorTimeAlarm1 = 0;
+
 
 
 void setTimerIntEthyleneFlow(unsigned long v){

@@ -37,13 +37,7 @@ int* ethyleneInyectionTimesPointer = &ethyleneInyectionTimes[0];
 bool ethyleneInyectionStatus = 0;
 bool* ethyleneInyectionStatusPointer = &ethyleneInyectionStatus;
 
-/*
-int humidityInyectionTimes[2] = {0, 0};
-int* humidityInyectionTimesPointer = &humidityInyectionTimes[0];
 
-bool humidityInyectionStatus = 0;
-bool *humidityInyectionStatusPointer = &humidityInyectionStatus;
-*/
 int timerNeutro1 = 0;
 int* timerNeutro1Pointer = &timerNeutro1;
 
@@ -56,38 +50,12 @@ int* timerNeutro3Pointer = &timerNeutro3;
 int timerNeutro4 = 0;
 int* timerNeutro4Pointer = &timerNeutro4;
 
-/*
-int timerGoOffAlarmTemperature = 0;
-int* timerGoOffAlarmTemperaturePointer = &timerGoOffAlarmTemperature;
-*/
-/*
-int timerGoOffAlarmEthylene = 0;
-int* timerGoOffAlarmEthylenePointer = &timerGoOffAlarmEthylene;
-*/
 
-/*
-int timerLimitAlarmTemperature = 0;
-int* timerLimitAlarmTemperaturePointer = &timerLimitAlarmTemperature;
-*/
-
-/*
-int timerLimitAlarmEthylene = 0;
-int* timerLimitAlarmEthylenePointer = &timerLimitAlarmEthylene;
-*/
 
 
 
 int timerInitializationFan = 0;
 int* timerInitializationFanPointer = &timerInitializationFan;
-
-int timerAlarmNoVentilation;
-int *timerAlarmNoVentilationPointer = &timerAlarmNoVentilation;
-
-int timerOpenDoorTimeAlarm1;
-int *timerOpenDoorTimeAlarm1Pointer = &timerOpenDoorTimeAlarm1;
-
-int timerOpenDoorTimeAlarm2;
-int *timerOpenDoorTimeAlarm2Pointer = &timerOpenDoorTimeAlarm2;
 
 
 int delayConnection;
@@ -146,12 +114,8 @@ void setup() {
   //------>Tarea 5
   //------->  Interrupcion por cambio de estado de pines
   attachInterrupt(digitalPinToInterrupt(MICRO_CUTS_DETECTION), attacMicroCuts, CHANGE);
-
   
-  chamber1.init(timerAlarmNoVentilationPointer,
-                  timerOpenDoorTimeAlarm1Pointer,
-                  timerOpenDoorTimeAlarm2Pointer);
-  
+  chamber1.init();
   //---------> Tarea 5
   chamber1.setupSafetyRelayReset();
 
@@ -160,17 +124,7 @@ void setup() {
 unsigned int numeroPasos = 0;
 
 void loop() {
-
-  //Serial.print("Timer etileno : "); Serial.println(*(ethyleneInyectionTimesPointer + *ethyleneInyectionStatusPointer));
-  
-  //------>Tarea 5
-  //Atiende la interrupcion de MicroCuts
-  chamber1.atiendeMicroCutsInterrup(&flagAttacMicroCutsPointer); 
-  //----------------------
-  //---------> Tarea 5
-  chamber1.atiendeGeneralSwitchDetect();
-  //---------------------------
-
+ 
   EthernetClient client = server.available();
 
   if (client)
@@ -183,72 +137,8 @@ void loop() {
     {
       // poll for Modbus TCP requests, while client connected
       modbusTCPServer.poll();
-
-      // aqui debe estar el codigo principa, por que hay muchas cosas que usa modbus
-      // entonces pierde la coneccion o no hay cliente y se sigue metiendo
     }
   }
-  /*
-  else
-  {
-    //client.stop();
-    //Serial.println("Client stoped");
-    //Serial.println("perdio conecion o no hay cliente");
-  }
-  */
-  
-
-
-  
-
-  if (!analogInputModule1Client.connected()) {
-    // client not connected, start the Modbus TCP client
-    Serial.println("Attempting to connect to Modbus TCP server");
-
-    if (!analogInputModule1Client.begin(analogInputModule1, 502)) {
-      Serial.println("Analog Input Module 1 failed to connect!");
-    } else {
-      Serial.println("Analog Input Module 1 connected");
-    }
-  } else
-  {
-    chamber1.getRawValues1();
-  }
-  
-
-
-  chamber1.getMeasurements();
-
- 
-  chamber1.temperatureControl();
-
-  chamber1.humidityControl(humidityInyectionTimesPointer,
-                              humidityInyectionStatusPointer);
-                              
-  
-  chamber1.ethyleneControl(ethyleneInyectionTimesPointer,
-                           ethyleneInyectionStatusPointer);
-  chamber1.CO2Control(timerInitializationFanPointer);
-  chamber1.ethyleneFlowRateControl();
-  chamber1.alarms(timerGoOffAlarmTemperaturePointer,
-                  timerGoOffAlarmHumidityPointer,
-                  timerGoOffAlarmEthylenePointer,
-                  timerGoOffAlarmCO2,
-                  timerLimitAlarmTemperaturePointer,
-                  timerLimitAlarmHumidityPointer,
-                  timerLimitAlarmEthylenePointer,
-                  timerLimitAlarmCO2Pointer,
-                  timerAlarmNoVentilationPointer,
-                  timerOpenDoorTimeAlarm1Pointer,
-                  timerOpenDoorTimeAlarm2Pointer);
- 
-  
-
-  
-
-
-//Serial.print("numeroPasos"); Serial.println(numeroPasos++);
-
 
 
   if (modbusTCPServer.holdingRegisterRead(260))
@@ -256,10 +146,9 @@ void loop() {
     chamber1.writeToEeprom();
   }
   
-
-
-  if (!analogOutputModule1Client.connected()) {
-    // client not connected, start the Modbus TCP client
+  
+  if (!analogInputModule1Client.connected() || !analogOutputModule1Client.connected()) {
+    
     Serial.println("Attempting to connect to Modbus TCP server");
 
     if (!analogOutputModule1Client.begin(analogOutputModule1, 502)) {
@@ -267,24 +156,31 @@ void loop() {
     } else {
       Serial.println("Analog Output Module 1 connected");
     }
-  } else
+
+    //////-------------------------------------------------------------
+    Serial.println("Attempting to connect to Modbus TCP server");
+
+    if (!analogInputModule1Client.begin(analogInputModule1, 502)) {
+      Serial.println("Analog Input Module 1 failed to connect!");
+    } else {
+      Serial.println("Analog Input Module 1 connected");
+    }
+  } 
+  else
   {
-    //-----> Tarea 2
-    //enable control
-    chamber1.enableControl();
-    //enable Input Output
-    chamber1.enableInputOutput();
-    //forced control
-    //-----> Tarea 3
-    chamber1.forcedControl();
-    
-    chamber1.writeAnalogValues();
-    //Zeta de Emergencia
-    //-----> Tarea 4
+    //------>Tarea 5
+    //Atiende la interrupcion de MicroCuts
+    chamber1.atiendeMicroCutsInterrup(&flagAttacMicroCutsPointer); 
+    //----------------------
+    //---------> Tarea 5
+    chamber1.atiendeGeneralSwitchDetect();
+    //---------------------------
     chamber1.setaEmergency();
-
-
+    //Aca se llama Todo el control
+    chamber1.run();
   }
+
+  //Ejecuta un interprete de la consola, para hacer debug
   //Funcion que ejecuta los comandos recibido del interprete o cosola debug
   tareaMainInterprete();
   //Ejecuta el interprete de las acciones de los comados
@@ -376,22 +272,22 @@ ISR(TIMER5_OVF_vect)
     *timerInitializationFanPointer -= 1;
   }
 
-  if(*timerAlarmNoVentilationPointer > 0){
-    *timerAlarmNoVentilationPointer -= 1;
+  if(timerAlarmNoVentilation > 0){
+    timerAlarmNoVentilation -= 1;
   } else{
-    *timerAlarmNoVentilationPointer = 0;
+    timerAlarmNoVentilation = 0;
   }
 
-  if(*timerOpenDoorTimeAlarm1Pointer > 0){
-    *timerOpenDoorTimeAlarm1Pointer -= 1;
+  if(timerOpenDoorTimeAlarm1 > 0){
+    timerOpenDoorTimeAlarm1 -= 1;
   } else{
-    *timerOpenDoorTimeAlarm1Pointer = 0;
+    timerOpenDoorTimeAlarm1 = 0;
   }
 
-  if(*timerOpenDoorTimeAlarm2Pointer > 0){
-    *timerOpenDoorTimeAlarm2Pointer -= 1;
+  if(timerOpenDoorTimeAlarm2 > 0){
+    timerOpenDoorTimeAlarm2 -= 1;
   } else{
-    *timerOpenDoorTimeAlarm2Pointer = 0;
+    timerOpenDoorTimeAlarm2 = 0;
   }
 
 
