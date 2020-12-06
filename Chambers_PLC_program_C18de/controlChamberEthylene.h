@@ -15,52 +15,45 @@
 class controlChamberEthylene
 {
 private:
+    //Modbus
     ModbusTCPServer* _modbusTCPServer;
-    ModbusTCPClient* _modbusTCPClient1;
-    ModbusTCPClient* _modbusTCPClient2;
-    PID* ethylenePID;
-    AnalogFilter<100, 10>* filterEthyl;
-
-    int _chamber;
     int addressOffset;
-    int eepromOffset;
-    int numHoldingRegistersAddresses = 370;
-    int numEepromAddresses = 500;
-    int rawValueInputModule1[8];
-    double calculatedSensorValues[8];
-    int analogOutputModule1Values[4];
-
+    //---
+    mapsensor* _mapsensor;
+    //---
+    PID* ethylenePID;
+    
     double ethyleneSetpoint, ethylenePIDOutput;
 
-    bool ethylDownActivator = false;
-    bool ethylUpActivator = false;
+    bool ethylDownActivator;
+    bool ethylUpActivator;
 
     float ethylPreviusValue;
 
-    bool alarmSensorEthyl1 = false;
+    bool previusMode; //esta se pasa por referencia
 
-    bool alarmSensorEthyl2 = false;
-
+    bool turnOn;
+    bool alarmSensorEthyl1;
+    bool alarmSensorEthyl2;
     //banderas de forzado del sistema de control 
-    bool flagForcedEthylene = 0;
-
+    bool flagForcedEthylene;
     //banderas de enable del sistema de control 
-    bool flagEnableControlSystemEthylene = 0;
-
-    //Activador alarma
-    bool alarmOn = 0;
-
+    bool flagEnableControlSystemEthylene;
     //funciones privadas para hacer debuggear en etileno
-    void debugControlEthylene();
+    void debugControlEthylene(String mdebug);
+
+    //Variables de normalizacion
+    double valueEthyleneNormalization;  
+    double valueEthyleneSetpointNormalization;
+    double calculatedSensorValues;
+    bool alarmOnGeneral;
+
 
 public:
-    controlChamberEthylene(int chamber,
-                            ModbusTCPServer* modbusTCPServer,
-                            ModbusTCPClient* modbusTCPClient1,
-                            ModbusTCPClient* modbusTCPClient2,
-                            int &holdingRegisterPerChamber);
+    controlChamberEthylene(ModbusTCPServer *modbusTCPServer,int maddressOffset);
 
     void setup();
+    
     void run(double medidaSendor);
     void enable();
     void forced();
@@ -69,12 +62,15 @@ public:
     bool getAlarmOnGeneral();
     
     //Control PID de ethyleneControl
-    ethyleneControl(int* ethyleneInyectionTimesPointer,
-                    bool* ethyleneInyectionStatusPointer);
+    void ethyleneControl(int* ethyleneInyectionTimesPointer,
+                         bool* ethyleneInyectionStatusPointer);
     
-    readEthylene(double medidaSensor);
+    void readEthylene(double medidaSensor);
     int getAnalogOutputModule1ValuesEthylene(unsigned char _pos);
     void stateIndicator(void);
+
+    bool getPreviusMode();
+    void setEthylUpActivator(bool state);
 
     ~controlChamberEthylene();
 }

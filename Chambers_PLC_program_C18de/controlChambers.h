@@ -6,16 +6,43 @@
 #include <PID_v1.h>
 #include <Filter.h>
 
-//incluimos la clase de control CO2
+//incluimos las nuevas clases de los sistemas de control
 #include "controlchamberco2.h"
 #include "controlChamberEthylene.h"
 #include "controlchambershumidity.h"
+//lectura de sensores
 #include "readsensor.h"
 
 //Definiciones de modo del Etileno
 #define MODO_INYECCION_INICIAL        1
 #define MODO_INYECCION_MANTENIMIENTO  2
 #define MODO_DESVERDIZACION           3
+
+//Pociones del vector de los calculos
+#define SensorOuputTemperatureValuePos            0
+#define SensorOuputHumidityValuePos               1
+#define SensorOuputEthyleneValuePos               2
+#define SensorOuputCo2ValuePos                    3
+#define SensorOuputEthyleneFlowValuePos           4
+#define SensorOutputFan1ValuePos                  5
+#define SensorOutputFan2ValuePos                  6
+
+
+//Entrada de los sensores
+#define NumberRawValueInputModule1        4
+
+#define rawValueInputModule1Co2           0
+#define rawValueInputModule1Ethylene      1
+#define rawValueInputModule1Temp          2
+#define rawValueInputModule1Hum           3
+
+//Posiciones de las Salidas de las cartas Analogicas
+#define NumberanalogOutputModule1Values       4
+#define analogOutputModule1ValuesCo2_0        0
+#define analogOutputModule1ValuesCo2_1        1
+#define analogOutputModule1ValuesEthylene     2
+#define analogOutputModule1ValuesEthylene     3
+
 
 
 class Chamber
@@ -24,8 +51,8 @@ class Chamber
 
   readsensor * readsensorInput;
   controlchamberco2 * _controlchamberco2;
-  int *timerGoOffAlarmCO2Pointer;
-  int *timerLimitAlarmCO2Pointer;
+  controlchambershumidity* _controlchambershumidity;
+
   //Estado del modo de desverdozacion-conservasion
     //-------------------------------------------------
     unsigned char estadoModoDesverdizacion;

@@ -33,6 +33,22 @@ extern int timerGoOffAlarmCO2;
 extern int timerLimitAlarmCO2;
 //------------------------
 
+//----timer alarma humedad----
+extern int timerGoOffAlarmhumidity;
+extern int timerLimitAlarmHumidity;
+
+extern bool humidityInyectionStatus;
+extern bool *humidityInyectionStatusPointer;
+
+extern int humidityInyectionTimes[2];
+extern int* humidityInyectionTimesPointer;
+//----------------------------
+
+//---Timer de Ethylene
+extern int timerGoOffAlarmEthylene;
+extern int timerLimitAlarmEthylene;
+//-----------------------
+
 
 extern struct structMicroCut timerMicroCut;
 extern struct structTimer timerInyectionEthyleneFlow;

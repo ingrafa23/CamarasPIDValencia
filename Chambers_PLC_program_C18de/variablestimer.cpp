@@ -7,6 +7,24 @@ struct structTimer timerMicroCut = {0,0,0,0};
 int timerGoOffAlarmCO2 = 0;
 int timerLimitAlarmCO2 = 0;
 
+//----timer alarma humedad---- esprobable que se coloque esto en el ino
+int timerGoOffAlarmhumidity=0;
+int timerLimitAlarmHumidity = 0;
+
+bool humidityInyectionStatus = 0;
+bool *humidityInyectionStatusPointer = &humidityInyectionStatus;
+
+int humidityInyectionTimes[2] = {0, 0};
+int* humidityInyectionTimesPointer = &humidityInyectionTimes[0];
+//----------------------------
+
+//---Timer de Ethylene
+int timerGoOffAlarmEthylene = 0;
+int timerLimitAlarmEthylene = 0;
+//-----------------------
+
+
+
 void setTimerIntEthyleneFlow(unsigned long v){
     timerInyectionEthyleneFlow.timerInit = v;
 }

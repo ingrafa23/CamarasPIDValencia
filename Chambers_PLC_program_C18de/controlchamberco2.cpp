@@ -111,7 +111,7 @@ controlchamberco2::alarm(){
 //Lectura de los Sensores de CO2
 controlchamberco2::readCO2(double medidaSensor)
 {
- _mapsensor->mapFloatMeasurementSensor(medidaSensor);
+  _mapsensor->mapFloatMeasurementSensor(medidaSensor);
   valueCO2Normalization = _mapsensor->getValueSensorNormaliced();
   calculatedSensorValues = _mapsensor->getValueSensor();
 }

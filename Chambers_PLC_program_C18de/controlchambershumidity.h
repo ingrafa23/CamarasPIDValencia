@@ -28,6 +28,9 @@ private:
     int humidityCycleTOn;
     int humidityCycleTOff;
 
+    bool previusMode; //esta se pasa por referencia
+    bool turnOn;
+
     bool flagForcedHumidity;
 
     double calculatedSensorValues;
@@ -40,12 +43,20 @@ private:
     //---
     int addressOffset;
 
+    //------
+    //estrucura de los pines IO
+    
+    struct mcontrolchambershumidityIO
+    {
+        bool humidityWaterValves;
+    }controlchambershumidityIO;
+
     void debugControlHumidity(String mdebug);
 
 public:
     controlchambershumidity(ModbusTCPServer *modbusTCPServer,int maddressOffset);
     void setup();
-    void run(double medidaSendor);
+    void run(double medidaSendor,bool autoSelectorValue);
     void enable();
     void forced();
     void alarm();
@@ -56,6 +67,9 @@ public:
     void readHumidity(double medidaSensor);
     int getAnalogOutputModule1ValuesHumidity(unsigned char _pos);
     void stateIndicator(void);
+
+    void setHumidityDownActivator(bool state);
+    bool getHumidityDownActivator();
 
     ~controlchambershumidity();
 };

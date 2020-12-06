@@ -37,12 +37,13 @@ int* ethyleneInyectionTimesPointer = &ethyleneInyectionTimes[0];
 bool ethyleneInyectionStatus = 0;
 bool* ethyleneInyectionStatusPointer = &ethyleneInyectionStatus;
 
+/*
 int humidityInyectionTimes[2] = {0, 0};
 int* humidityInyectionTimesPointer = &humidityInyectionTimes[0];
 
 bool humidityInyectionStatus = 0;
-bool* humidityInyectionStatusPointer = &humidityInyectionStatus;
-
+bool *humidityInyectionStatusPointer = &humidityInyectionStatus;
+*/
 int timerNeutro1 = 0;
 int* timerNeutro1Pointer = &timerNeutro1;
 
@@ -58,23 +59,20 @@ int* timerNeutro4Pointer = &timerNeutro4;
 int timerGoOffAlarmTemperature = 0;
 int* timerGoOffAlarmTemperaturePointer = &timerGoOffAlarmTemperature;
 
-int timerGoOffAlarmhumidity = 0;
-int* timerGoOffAlarmHumidityPointer = &timerGoOffAlarmhumidity;
-
+/*
 int timerGoOffAlarmEthylene = 0;
 int* timerGoOffAlarmEthylenePointer = &timerGoOffAlarmEthylene;
-
+*/
 
 
 int timerLimitAlarmTemperature = 0;
 int* timerLimitAlarmTemperaturePointer = &timerLimitAlarmTemperature;
 
-int timerLimitAlarmHumidity = 0;
-int* timerLimitAlarmHumidityPointer = &timerLimitAlarmHumidity;
 
+/*
 int timerLimitAlarmEthylene = 0;
 int* timerLimitAlarmEthylenePointer = &timerLimitAlarmEthylene;
-
+*/
 
 
 
@@ -337,14 +335,14 @@ ISR(TIMER5_OVF_vect)
     *timerGoOffAlarmTemperaturePointer -= 1;
   }
 
-  if (*timerGoOffAlarmHumidityPointer > 0)
+  if (timerGoOffAlarmhumidity > 0)
   {
-    *timerGoOffAlarmHumidityPointer -= 1;
+    timerGoOffAlarmhumidity -= 1;
   }
 
-  if (*timerGoOffAlarmEthylenePointer > 0)
+  if (timerGoOffAlarmEthylene > 0)
   {
-    *timerGoOffAlarmEthylenePointer -= 1;
+    timerGoOffAlarmEthylene -= 1;
   }
 
   if (timerGoOffAlarmCO2 > 0)
@@ -357,14 +355,14 @@ ISR(TIMER5_OVF_vect)
     *timerLimitAlarmTemperaturePointer -= 1;
   }
 
-  if (*timerLimitAlarmHumidityPointer > 0)
+  if (timerLimitAlarmHumidity > 0)
   {
-    *timerLimitAlarmHumidityPointer -= 1;
+    timerLimitAlarmHumidity -= 1;
   }
 
-  if (*timerLimitAlarmEthylenePointer > 0)
+  if (timerLimitAlarmEthylene > 0)
   {
-    *timerLimitAlarmEthylenePointer -= 1;
+    timerLimitAlarmEthylene -= 1;
   }
 
   if (timerLimitAlarmCO2 > 0)
