@@ -64,8 +64,7 @@ int* timerGoOffAlarmHumidityPointer = &timerGoOffAlarmhumidity;
 int timerGoOffAlarmEthylene = 0;
 int* timerGoOffAlarmEthylenePointer = &timerGoOffAlarmEthylene;
 
-int timerGoOffAlarmCO2 = 0;
-int* timerGoOffAlarmCO2Pointer = &timerGoOffAlarmCO2;
+
 
 int timerLimitAlarmTemperature = 0;
 int* timerLimitAlarmTemperaturePointer = &timerLimitAlarmTemperature;
@@ -76,8 +75,8 @@ int* timerLimitAlarmHumidityPointer = &timerLimitAlarmHumidity;
 int timerLimitAlarmEthylene = 0;
 int* timerLimitAlarmEthylenePointer = &timerLimitAlarmEthylene;
 
-int timerLimitAlarmCO2 = 0;
-int* timerLimitAlarmCO2Pointer = &timerLimitAlarmCO2;
+
+
 
 int timerInitializationFan = 0;
 int* timerInitializationFanPointer = &timerInitializationFan;
@@ -235,7 +234,7 @@ void loop() {
   chamber1.alarms(timerGoOffAlarmTemperaturePointer,
                   timerGoOffAlarmHumidityPointer,
                   timerGoOffAlarmEthylenePointer,
-                  timerGoOffAlarmCO2Pointer,
+                  timerGoOffAlarmCO2,
                   timerLimitAlarmTemperaturePointer,
                   timerLimitAlarmHumidityPointer,
                   timerLimitAlarmEthylenePointer,
@@ -348,9 +347,9 @@ ISR(TIMER5_OVF_vect)
     *timerGoOffAlarmEthylenePointer -= 1;
   }
 
-  if (*timerGoOffAlarmCO2Pointer > 0)
+  if (timerGoOffAlarmCO2 > 0)
   {
-    *timerGoOffAlarmCO2Pointer -= 1;
+    timerGoOffAlarmCO2 -= 1;
   }
 
   if (*timerLimitAlarmTemperaturePointer > 0)
@@ -368,9 +367,9 @@ ISR(TIMER5_OVF_vect)
     *timerLimitAlarmEthylenePointer -= 1;
   }
 
-  if (*timerLimitAlarmCO2Pointer > 0)
+  if (timerLimitAlarmCO2 > 0)
   {
-    *timerLimitAlarmCO2Pointer -= 1;
+    timerLimitAlarmCO2 -= 1;
   }
 
   if (*timerInitializationFanPointer > 0)

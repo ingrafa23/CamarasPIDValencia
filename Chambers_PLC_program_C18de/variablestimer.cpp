@@ -3,6 +3,10 @@
 structTimer timerInyectionEthyleneFlow;
 struct structTimer timerMicroCut = {0,0,0,0};
 
+//timer Alarmas CO2
+int timerGoOffAlarmCO2 = 0;
+int timerLimitAlarmCO2 = 0;
+
 void setTimerIntEthyleneFlow(unsigned long v){
     timerInyectionEthyleneFlow.timerInit = v;
 }

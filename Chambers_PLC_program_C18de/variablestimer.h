@@ -28,6 +28,12 @@ struct structMicroCut
     unsigned char flag03;
 } ;
 
+//--timer Alarmas CO2-----
+extern int timerGoOffAlarmCO2;
+extern int timerLimitAlarmCO2;
+//------------------------
+
+
 extern struct structMicroCut timerMicroCut;
 extern struct structTimer timerInyectionEthyleneFlow;
 

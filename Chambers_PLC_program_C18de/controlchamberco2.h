@@ -35,16 +35,12 @@ private:
 
     //Salidas
     int analogOutputModule1ValuesCo2[2];
-
     /* data */
-    
     ModbusTCPServer* _modbusTCPServer;
     //---
     mapsensor* _mapsensor;
     //---
     int addressOffset;
-
-
     bool alarmSensorCO21 = false;
     bool alarmSensorCO22 = false;
     bool ethyleneFlowRateCO2Control= 0;
@@ -57,13 +53,14 @@ private:
     bool flagEnableControlSystemCO2 = 0;
 
     //funciones privadas para hacer debuggear en cada uno de los sistemas de control
-    void debugControlCo2();
+    void debugControlCo2(String mdebug);
 
     //funciones del etilene flow rate para el balance de gases
     void inyeccionPorVentiladoresCO2(void);
 
-    void debugControlCo2(String mdebug);
+    
 
+    //estrucura de los pines IO
     struct mcontrolChamberCo2IO
     {
         bool inputFan1;
@@ -79,17 +76,15 @@ private:
 public:
     controlchamberco2(ModbusTCPServer *modbusTCPServer,int maddressOffset);
     void setup();
-    void run(double medidaSendor,int* timerGoOffAlarmCO2Pointer,
-               int* timerLimitAlarmCO2Pointer);
+    void run(double medidaSendor);
     void enable();
     void forced();
-    void alarm(int* timerGoOffAlarmCO2Pointer,
-               int* timerLimitAlarmCO2Pointer);
+    void alarm();
     void writeIO();
     bool getAlarmOnGeneral();
     //Control PID CO2         
-    CO2Control(int* timerInitializationFanPointer);
-    readCO2();
+    void CO2Control();
+    void readCO2(double medidaSensor);
     int getAnalogOutputModule1ValuesCo2(unsigned char _pos);
     void stateIndicator(void);
     

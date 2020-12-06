@@ -47,18 +47,11 @@ Chamber::Chamber(int chamber,
   eepromOffset = _chamber * numEepromAddresses;
 //---------------------------------------------------
   readsensorInput = new readsensor(&_modbusTCPClient1);
-  
+
   _controlchamberco2 = new controlchamberco2(&modbusTCPServer,addressOffset);
   
-  //--------------------------------
+  
 
-  humidityPID = new PID(&valueHumidityNormalization, //----> Setpoint normalizado entre 0 y 1
-                        &humidityPIDOutput,
-                        &valueHumiditySetpointNormalization, //----> setpoint normalizado valor entre 0 y 1
-                        1, 1, 1,
-                        DIRECT);
-  humidityPID->SetSampleTime(SAMPLE_TIME_HUMIDITY);
-  humidityPID->SetOutputLimits(OUTPUT_HUMIDITY_LIMITS_MIN, OUTPUT_HUMIDITY_LIMITS_MAX);
 
   ethylenePID = new PID(&valueEthyleneNormalization,
                         &ethylenePIDOutput,
@@ -72,20 +65,7 @@ Chamber::Chamber(int chamber,
   ethylenePID->SetOutputLimits(ETHYLENE_PID_LIMIT_MIN, ETHYLENE_PID_LIMIT_MAX);
 
 
-  // PID Control CO2
-  CO2PID = new PID(&valueCO2Normalization,
-                   &CO2PIDOutput,
-                   &valueCO2SetpointNormalization,
-                   1, 1, 1,
-                   REVERSE);
-  CO2PID->SetSampleTime(50);
-  CO2PID->SetOutputLimits(PID_CO2_CONTROL_MIN, PID_CO2_CONTROL_MAX);
-
-  ValidationPIDCO2.cont = 0;
-  ValidationPIDCO2.valor = 0;
-  ValidationPIDCO2.flag = 1;
-
-  // end PID Control CO2
+  
 
   // PID Control ethyleneFlowPID
   ethyleneFlowPID = new PID(&valueEthyleneFlowNormalization,
@@ -2248,9 +2228,6 @@ void Chamber::setupSafetyRelayReset(void){
 // StateAutoTelSelector ---> Tarea 11
 void Chamber::stateAutoTelSelector(void){
 
-  
-  
-
   if (digitalRead(AUTO_TEL_SELECTOR)) 
   {
     //Asignamos el HR a 1
@@ -2278,7 +2255,6 @@ void Chamber::stateAutoTelSelector(void){
   else {
     CLEAR_AUTOTEL_SELECTOR_HR;
   }
-
 }
 
   //----------> Tarea 17
@@ -2348,10 +2324,10 @@ void Chamber::stateAutoTelSelector(void){
     }
 
   void Chamber::run(){
-      //LEctura de todos los sensores Analogicos de entrada
+      //Lectura de todos los sensores Analogicos de entrada
        readsensorInput->runReadSesor();
        //cambiar estos timer a la funcion variablesTimer
-       _controlchamberco2->run(readsensorInput->getValueSensor(0),&timerGoOffAlarmCO2Pointer,&timerLimitAlarmCO2Pointer); 
+       _controlchamberco2->run(readsensorInput->getValueSensor(0)); 
   }
 
 

@@ -8,6 +8,8 @@
 
 //incluimos la clase de control CO2
 #include "controlchamberco2.h"
+#include "controlChamberEthylene.h"
+#include "controlchambershumidity.h"
 #include "readsensor.h"
 
 //Definiciones de modo del Etileno
@@ -169,7 +171,7 @@ class Chamber
     void debugControlTemp();
     
     //Auto selector selection
-    bool autoSelectorValue = 0;
+    bool autoSelectorValue;
 
     
 

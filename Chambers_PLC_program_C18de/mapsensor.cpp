@@ -27,6 +27,8 @@ mapsensor::mapsensor  (ModbusTCPServer *modbusTCPServer /*obj modbusTCPServer*/,
   addrspanSensor1 = maddrspanSensor1;
   constNormalizacion = mConstNormalizacion;
 
+  filterSensor = new AnalogFilter<100, 10>;
+
 }
 
 void mapsensor::mapFloatMeasurementSensor(int rawValueInputModule /*lectura del sensor*/){

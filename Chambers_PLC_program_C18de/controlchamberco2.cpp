@@ -1,5 +1,4 @@
 #include "controlchamberco2.h"
-
 #include "constPID.h"
 #include "HoldingRegisterControl.h"
 #include "variablesAlarm.h"
@@ -7,7 +6,6 @@
 #include "InputOutputAssignments.h"
 #include "miscellaneous.h"
 #include "consoladebug.h"
-
 #include "mapsensor.h"
 
 
@@ -41,7 +39,7 @@ controlchamberco2::controlchamberco2(ModbusTCPServer *modbusTCPServer,int maddre
   CO2PID->SetSampleTime(50);
   CO2PID->SetOutputLimits(PID_CO2_CONTROL_MIN, PID_CO2_CONTROL_MAX);
 
-///creo que no se usa
+
   ValidationPIDCO2.cont = 0;
   ValidationPIDCO2.valor = 0;
   ValidationPIDCO2.flag = 1;
@@ -49,13 +47,12 @@ controlchamberco2::controlchamberco2(ModbusTCPServer *modbusTCPServer,int maddre
 }
 
 //alarmas co2
-controlchamberco2::alarm(int *timerGoOffAlarmCO2Pointer,
-                         int *timerLimitAlarmCO2Pointer){
+controlchamberco2::alarm(){
     //EMPIEZAN ALARMAS CO2
 
   if (calculatedSensorValues > _modbusTCPServer->holdingRegisterRead(addressOffset + 42)) // > setpoint alarm co2
   {
-    if (*timerLimitAlarmCO2Pointer <= 0)
+    if (timerLimitAlarmCO2 <= 0)
     {
       _modbusTCPServer->holdingRegisterSetBit(addressOffset + 254, 3); // high co2 alarm on
       alarmOnGeneral = true;  // general alarm
@@ -65,7 +62,7 @@ controlchamberco2::alarm(int *timerGoOffAlarmCO2Pointer,
   else
   {
     _modbusTCPServer->holdingRegisterClearBit(addressOffset + 254, 3); // high co2 alarm off
-    *timerLimitAlarmCO2Pointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 159);
+    timerLimitAlarmCO2 = _modbusTCPServer->holdingRegisterRead(addressOffset + 159);
   }
 
   //ACABAN ALARMAS CO2
@@ -74,12 +71,8 @@ controlchamberco2::alarm(int *timerGoOffAlarmCO2Pointer,
 
   if (calculatedSensorValues == CO2PreviusValue)
   {
-    int e = *timerGoOffAlarmCO2Pointer;
-    //Serial.println(e);
-
-    if (*timerGoOffAlarmCO2Pointer <= 0)
+    if (timerGoOffAlarmCO2 <= 0)
     {
-      //      Serial.println("repetido");
       _modbusTCPServer->holdingRegisterSetBit(addressOffset + 255, 2);
       alarmSensorCO21 = true;
       alarmOnGeneral = true;
@@ -87,8 +80,8 @@ controlchamberco2::alarm(int *timerGoOffAlarmCO2Pointer,
   }
   else
   {
-    *timerGoOffAlarmCO2Pointer = _modbusTCPServer->holdingRegisterRead(addressOffset + 155);
-    //    Serial.println("diferente");
+    timerGoOffAlarmCO2 = _modbusTCPServer->holdingRegisterRead(addressOffset + 155);
+    
     _modbusTCPServer->holdingRegisterClearBit(addressOffset + 255, 2);
     alarmSensorCO21 = false;
   }
@@ -125,13 +118,12 @@ controlchamberco2::readCO2(double medidaSensor)
 
 
 
-controlchamberco2:: CO2Control(int *timerInitializationFanPointer){
+controlchamberco2:: CO2Control(){
 
     //Si la cámara está en marcha regula el CO2 y si no desactiva la regulación
 if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ||
     alarmSensorCO21 == false || alarmSensorCO22 == false )  
   {
-
     /////////////////////////Control de CO2 por consigna//////////////////////////
     if (!_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 5) ) 
     {
@@ -147,7 +139,7 @@ if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ||
         controlChamberCo2IO.inputFan2 = 1;  //-----digitalWrite(OUTPUT_FAN_1, HIGH);
         controlChamberCo2IO.outputFan1 = 1; //-----digitalWrite(INPUT_FAN_2, HIGH);
         controlChamberCo2IO.outputFan2 = 1; //-----digitalWrite(OUTPUT_FAN_2, HIGH);
-         
+        
       }
 
       if (calculatedSensorValues <=
@@ -366,11 +358,10 @@ void controlchamberco2::stateIndicator(){
 
 
 
-void controlchamberco2::run(double medidaSendor,int* timerGoOffAlarmCO2Pointer,
-               int* timerLimitAlarmCO2Pointer){
+void controlchamberco2::run(double medidaSendor){
 
     this->readCO2(medidaSendor);
-    this->alarm(&timerGoOffAlarmCO2Pointer, &timerLimitAlarmCO2Pointer); //aqui puede haber un error pero no se
+    this->alarm(); //aqui puede haber un error pero no se
     this->CO2Control();
     this->enable();
     this->forced();
