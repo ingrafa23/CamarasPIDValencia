@@ -38,7 +38,7 @@
 #define FORCED_CONTROL_HEATING_REQUEST          0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 10)
 #define FORCED_EVAPORATOR_FAN_ACTIVATOR         0       //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 11)
 #define FORCED_ALARM_SET                        0       //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 12)
-#define FORCED_ETHYLENE                         0       //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 13)
+#define FORCED_ETHYLENE                               _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 13)
 
 
 // Macros asociadas al holdregister  inicio de ciclo en balance de gaces -  modo mantenimineto
@@ -62,6 +62,7 @@
 #define ENABLE_CONTROL_HEATING_REQUEST      _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 12)
 #define ENABLE_EVAPORATOR_FAN_ACTIVATOR     _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 1)
 #define ENABLE_ALARM_SET                    _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 0)
+#define ENABLE_ETHYLENE                     _modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 4)
 
 #define ENABLE_AUTOTEL_SELECTOR_HR          _modbusTCPServer->holdingRegisterReadBit(addressOffset + 256, 10)
 #define SET_AUTOTEL_SELECTOR_HR             _modbusTCPServer->holdingRegisterSetBit(addressOffset + 256, 10)

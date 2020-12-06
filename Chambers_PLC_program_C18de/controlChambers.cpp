@@ -1,5 +1,4 @@
 #include "controlChambers.h"
-#include "constPID.h"
 #include "HoldingRegisterControl.h"
 #include "variablesAlarm.h"
 #include "variablestimer.h"
@@ -50,7 +49,8 @@ Chamber::Chamber(int chamber,
 
   _controlchamberco2 = new controlchamberco2(&modbusTCPServer,addressOffset);
   _controlchambershumidity = new controlchambershumidity(&modbusTCPServer,addressOffset);
-  
+  _controlChamberEthylene = new controlChamberEthylene(&modbusTCPServer,addressOffset);
+  _controlChamberEthyleneFlow = new controlChamberEthyleneFlow(&modbusTCPServer,addressOffset);
   
 
 
@@ -70,33 +70,13 @@ Chamber::Chamber(int chamber,
 
   // de aqui para abajo se borrara
 
-  // PID Control ethyleneFlowPID
-  ethyleneFlowPID = new PID(&valueEthyleneFlowNormalization,
-                            &ethyleneFlowPIDOutput,
-                            &valueEthyleneFlowSetpointNormalization,
-                            1, 1, 1,
-                            DIRECT);
-                            
   
-
-  ethyleneFlowPID->SetSampleTime(100);
-  ethyleneFlowPID->SetOutputLimits(ETHYLENE__FLOW_PID_LIMIT_MIN, ETHYLENE__FLOW_PID_LIMIT_MAX);
-
-  // end PID Control ethyleneFlowPID
-
-  ValidationPIDFlowethylene.cont = 0;
-  ValidationPIDFlowethylene.valor = 0;
-  ValidationPIDFlowethylene.flag = 1;
 
   ValidationPIDControlethylene.cont = 0;
   ValidationPIDControlethylene.valor = 0;
   ValidationPIDControlethylene.flag = 1;
 
-  filterEthylFlow = new AnalogFilter<100, 10>;
-  filterTemp = new AnalogFilter<100, 10>;
-  filterHum = new AnalogFilter<100, 10>;
-  filterCO2 = new AnalogFilter<100, 10>;
-  filterEthyl = new AnalogFilter<100, 10>;
+  
 
   
 
@@ -159,11 +139,17 @@ void Chamber::run(){
   _controlchamberco2->run(readsensorInput->getValueSensor(rawValueInputModule1Co2));
   //run del control humidity
   _controlchambershumidity->run(readsensorInput->getValueSensor(rawValueInputModule1Hum),autoSelectorValue);
+  // run del control de ehtylene
+  _controlChamberEthylene->run(readsensorInput->getValueSensor(rawValueInputModule1Ethylene));
+  // run control de ethylene flow
+  _controlChamberEthyleneFlow->run(analogRead(ETHYLENE_FLOW_IN),_controlchamberco2->getAnalogOutputModule1ValuesCo2(0),
+                              _controlchamberco2->getAnalogOutputModule1ValuesCo2(1),_controlchamberco2->getMinCo2());
 
   //habilitadores
   //forzados
   // escritura de entras
   // escrituras de salidas
+  this->writeAnalogValues();
   //indicadores
 
 }
@@ -174,6 +160,19 @@ Chamber::writeAnalogValues()
   analogOutputModule1Values[analogOutputModule1ValuesCo2_0] = _controlchamberco2->getAnalogOutputModule1ValuesCo2(1);
 
 
+  if (_controlChamberEthylene->getAnalogOutputModule1FlagEthylene())
+  {
+    analogOutputModule1Values[analogOutputModule1ValuesEthylene] = _controlChamberEthylene->getAnalogOutputModule1ValuesEthylene();
+  }else
+  {
+    if (_controlChamberEthyleneFlow->getAnalogOutputModule1FlagEthyleneFlow())
+    {
+      analogOutputModule1Values[analogOutputModule1ValuesEthylene] = _controlChamberEthyleneFlow->getAnalogOutputModule1ValuesEthyleneFlow();
+    }
+    
+  }
+  
+  
   _modbusTCPClient2->beginTransmission(HOLDING_REGISTERS, 40, 4);
 
   for (int i = 0; i < NumberanalogOutputModule1Values; i++)
@@ -188,7 +187,8 @@ Chamber::writeAnalogValues()
 void Chamber::alarmsGeneral(){
 //ojo este debe ser de las alarmas generales
 
-  if(alarmOn == true || _controlchamberco2->getAlarmOnGeneral() == true || _controlchambershumidity->getAlarmOnGeneral() == true)
+  if(alarmOn == true || _controlchamberco2->getAlarmOnGeneral() == true || _controlchambershumidity->getAlarmOnGeneral() == true
+    || _controlChamberEthylene->getAlarmOnGeneral == true)
   {
     digitalWrite(ALARM_SET, HIGH);
   }
@@ -198,17 +198,7 @@ void Chamber::alarmsGeneral(){
   }
 }
 
-Chamber::alarms(int *timerGoOffAlarmTemperaturePointer,
-                int *timerGoOffAlarmHumidityPointer,
-                int *timerGoOffAlarmEthylenePointer,
-                int *timerGoOffAlarmCO2Pointer,
-                int *timerLimitAlarmTemperaturePointer,
-                int *timerLimitAlarmHumidityPointer,
-                int *timerLimitAlarmEthylenePointer,
-                int *timerLimitAlarmCO2Pointer,
-                int *timerAlarmNoVentilationPointer,
-                int *timerOpenDoorTimeAlarm1Pointer,
-                int *timerOpenDoorTimeAlarm2Pointer)
+Chamber::alarms()
 {
 
   
@@ -704,11 +694,7 @@ Chamber::writeToEeprom()
 }
 
 Chamber::temperatureControl()
-{
-
-  
-
-          
+{    
   ///// Temperature external control selected /////
   if (autoSelectorValue &&
       _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) &&
@@ -756,11 +742,6 @@ Chamber::temperatureControl()
 
       ///////////
 
-      digitalWrite(CONTROL_COOLING_REQUEST, LOW); --> variable 
-
-      final del programa
-
-      VARIABLE_ALARM_INCLUDE
 
 
 
@@ -1198,7 +1179,7 @@ Chamber::CO2Control(int *timerInitializationFanPointer)
         else
         {
         digitalWrite(INPUT_FAN_1, LOW);
-        
+    
         }
 
 
@@ -1276,13 +1257,11 @@ Chamber::CO2Control(int *timerInitializationFanPointer)
 }
 
 Chamber::ethyleneFlowRateControl()
-{
-  
+{  
 /**
  * Codigo Nuevo
  * 
 */
-
 //Habilitado de etileno
   /*BEGIN CONDITION ENABALE CONTROL SYSTEM ETHYLENE*/
     // Entrada modo trabajo desverdizacion
@@ -1318,7 +1297,6 @@ Chamber::ethyleneFlowRateControl()
  * 
  * fin de codigo nuevo
 */
-
 }
 
 Chamber::readTemp()
@@ -1856,15 +1834,7 @@ void Chamber::enableControl(){
     flagEnableControlSystemEthylene = 0;
   }
 
-  //ENABLE ETHYLENE FLOW
-  if (ENABLE_ETHYLENE_FLOW)
-  {
-    flagEnableControlSystemEthyleneFlow = 1;
-  }
-  else
-  {
-    flagEnableControlSystemEthyleneFlow = 0;
-  }
+  
 
     
   
@@ -1915,21 +1885,7 @@ void Chamber::enableInputOutput(){
     
   }
 
-  if(!ENABLE_COOLING_REQUEST){
-    digitalWrite(COOLING_REQUEST, LOW);
-  }
-
-  if(!ENABLE_HEATING_REQUEST){
-    digitalWrite(HEATING_REQUEST, LOW);
-  }
-
-  if(!ENABLE_CONTROL_COOLING_REQUEST){
-    digitalWrite(CONTROL_COOLING_REQUEST, LOW);
-  }
-
-  if(!ENABLE_CONTROL_HEATING_REQUEST){
-    digitalWrite(CONTROL_HEATING_REQUEST, LOW);
-  }
+  
 
   if(!ENABLE_EVAPORATOR_FAN_ACTIVATOR){
     digitalWrite(EVAPORATOR_FAN_ACTIVATOR, LOW);
@@ -2073,42 +2029,6 @@ void Chamber::debugControlEthylene(){
       }
     }
 }
-
-/* funcion para debugear el control del flujo de etileno */
-void Chamber::debugControlEthyleneFlow(){
-  if (debugConsole.ethyleneflow)
-  {
-    unsigned long timeConsoleIn = millis();
-    if(timeConsoleIn>1000){//para que se imprima cada 1000ms
-      
-      switch (debugEstadoModoDesverdizacion)
-      {
-      case MODO_INYECCION_INICIAL:
-        Serial.println("Ejecutando MODO_INYECCION_INICIAL");
-        break;
-      
-      case MODO_INYECCION_MANTENIMIENTO:
-        Serial.println("Ejecutando MODO_INYECCION_MANTENIMIENTO");
-        break;
-      
-      case MODO_DESVERDIZACION:
-        Serial.print("Modo Desverdizacion :"); Serial.println(estadoModoDesverdizacion);
-        break;
-      
-      default:
-        break;
-      }
-
-      //--------------aca se imprime todo lo que quiera
-      Serial.println("-------Console Ethylene Flow -------------------------------------");
-      Serial.print("desiredEthyleneFlowRate  :");Serial.println(String(desiredEthyleneFlowRate, 4));
-      Serial.print("Lectura Sensor Ethylene Flow  :"); Serial.println(calculatedSensorValues[SensorOuputEthyleneFlowValuePos]);
-      Serial.print("PID ethyleneFlowPIDOutput : ");Serial.println(ethyleneFlowPIDOutput);
-      Serial.println("-------________________------------------------------------------");
-    }    
-  }
-}
-
 
 
 /* funcion para debugear el control de temperatura */

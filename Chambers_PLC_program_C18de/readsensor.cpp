@@ -1,6 +1,4 @@
 #include "readsensor.h"
-#include "controlchamberco2.h"
-#include "constPID.h"
 #include "HoldingRegisterControl.h"
 #include "variablesAlarm.h"
 #include "variablestimer.h"

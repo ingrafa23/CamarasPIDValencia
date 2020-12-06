@@ -1,5 +1,4 @@
 #include "controlchamberco2.h"
-#include "constPID.h"
 #include "HoldingRegisterControl.h"
 #include "variablesAlarm.h"
 #include "variablestimer.h"
@@ -398,6 +397,12 @@ bool controlchamberco2::getAlarmOnGeneral(){
 
 int controlchamberco2::getAnalogOutputModule1ValuesCo2(unsigned char _pos){
   return analogOutputModule1ValuesCo2[_pos];
+}
+
+int controlchamberco2::getMinCo2(){
+
+  int mrespuesta = CO2_PID_CLOSE;
+  return mrespuesta;
 }
 
 

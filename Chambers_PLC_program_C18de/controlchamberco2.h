@@ -17,6 +17,12 @@
   //constante de normalizacion de la entrada del PID CO2
   #define CONST_NORMALIZATION_CO2_PID 100.0  
 
+  // minimo forzado
+  #define CO2_PID_CLOSE 4000
+   // maximo forzado  
+  #define CO2_PID_OPEN 20000 
+  
+
 class controlchamberco2
 {
 private:
@@ -86,6 +92,7 @@ public:
     void CO2Control();
     void readCO2(double medidaSensor);
     int getAnalogOutputModule1ValuesCo2(unsigned char _pos);
+    int getMinCo2();
     void stateIndicator(void);
     
     

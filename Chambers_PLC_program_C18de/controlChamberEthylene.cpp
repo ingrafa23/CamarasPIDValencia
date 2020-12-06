@@ -1,5 +1,4 @@
-#include "controlchamberethylene.h"
-#include "constPID.h"
+#include "controlChamberEthylene.h"
 #include "HoldingRegisterControl.h"
 #include "variablesAlarm.h"
 #include "variablestimer.h"
@@ -9,22 +8,22 @@
 #include "mapsensor.h"
 
 
-void controlchamberethylene::setup(){
+void controlChamberEthylene::setup(){
 
 }
 
-void controlchamberethylene::controlchamberethylene(ModbusTCPServer *modbusTCPServer,int maddressOffset)
+void controlChamberEthylene::controlChamberEthylene(ModbusTCPServer *modbusTCPServer,int maddressOffset)
 {
   _modbusTCPServer = modbusTCPServer;
   addressOffset = maddressOffset;
 
 //-----------------
   _mapsensor = new mapsensor(&modbusTCPServer,
-                        addressOffset + 262,            // CO2 Measure
+                        addressOffset + 262,            // C2h4 Measure
                         addressOffset + 83,             // LowLimit1
                         addressOffset + 84,             // HighLimit1
                         addressOffset + 85,             // zeroSensor1
-                        addressOffset + 96,             // spanSensor1
+                        addressOffset + 86,             // spanSensor1
                         CONST_NORMALIZATION_ETHYLENE_PID);   // constante de normalización co2
   //-----------------
   
@@ -55,7 +54,7 @@ void controlchamberethylene::controlchamberethylene(ModbusTCPServer *modbusTCPSe
   
 }
 
-void controlchamberethylene::alarm(){
+void controlChamberEthylene::alarm(){
     if (previusMode != _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1) && turnOn == false)
     {
         ethylUpActivator = false;
@@ -156,17 +155,169 @@ void controlchamberethylene::alarm(){
 }
 
 
-void controlchamberethylene::readEthylene(double medidaSendor){
+void controlChamberEthylene::readEthylene(double medidaSensor){
   _mapsensor->mapFloatMeasurementSensor(medidaSensor);
   valueEthyleneNormalization = _mapsensor->getValueSensorNormaliced();
   calculatedSensorValues = _mapsensor->getValueSensor();
 }
 
 
-void controlchamberethylene::ethyleneControl(){
+void controlChamberEthylene::ethyleneControl()
+{
+    ////////////////////Modo desverdizado activo///////////////////////
+    //Modo trabajo desverdización
+    if ( _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 0) ) 
+            //Cámara en marcha
+    {
+      /////////////////Bloque control por PID//////////////////////////
+      if (!_modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1) &&
+          _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 4))
+      {
+        if(alarmSensorEthyl1 == false && alarmSensorEthyl2 == false) //Control por análisis activo
+        {
+          float relativeError = (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18) -
+                                _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 262)) /
+                                _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18);
 
+          if (relativeError >= (1 - (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 140) / 100)))
+          { 
+            ethylenePID->SetMode(MANUAL);
+
+            analogOutputModule1Values.value = ETHYLENE_PID_OPEN; ///----analogOutputModule1Values[2]
+            analogOutputModule1Values.flag = 1;
+
+            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 1);   
+          }
+          else if (relativeError <= (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 140) / 100) - 1)
+          {
+            ethylenePID->SetMode(MANUAL);
+
+            analogOutputModule1Values.value = ETHYLENE_PID_CLOSE;
+            analogOutputModule1Values.flag = 1;
+
+            _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
+          }
+          else
+          {
+            ethylenePID->SetMode(AUTOMATIC);
+            _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 1);
+            
+            ethyleneSetpoint = (double)_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 18);
+            valueEthyleneSetpointNormalization = ethyleneSetpoint / CONST_NORMALIZATION_ETHYLENE_PID;
+
+            ethylenePID->SetTunings(KP_ETHYLENE_PID, KI_ETHYLENE_PID, KD_ETHYLENE_PID);
+
+            ethylenePID->Compute();
+
+            analogOutputModule1Values.value = ethylenePIDOutput;
+            analogOutputModule1Values.flag = 1;
+
+            ValidationPIDControlethylene.valor = ethylenePIDOutput;
+
+            ValidationPID(&ValidationPIDControlethylene, ETHYLENE_PID_LIMIT_MIN);
+            
+            if (ValidationPIDControlethylene.flag)
+            {
+              analogOutputModule1Values.value = ETHYLENE_PID_CLOSE;
+              analogOutputModule1Values.flag = 1;
+
+              _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
+              
+            }
+          }
+        }
+        else
+        {
+        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 0, 4);
+        }
+      }
+      ///////////////////////Fin bloque de control por análisis//////////////////////////
+    }
+    else
+    {
+        ethylenePID->SetMode(MANUAL);
+
+        analogOutputModule1Values.value = 4000;
+        analogOutputModule1Values.flag = 1;
+
+        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
+    }
+    /*END CONDITION ENABALE CONTROL SYSTEM ETHYLENE*/
 }
 
-void controlchamberethylene::run(){
+void controlChamberEthylene::enable(){
+    if (!ENABLE_ETHYLENE)
+    {
+        analogOutputModule1Values.value = ETHYLENE_PID_CLOSE;
+        analogOutputModule1Values.flag = 1;
+    }
+}
+
+void controlChamberEthylene::forced(){
+    if (FORCED_ETHYLENE)
+    {
+        analogOutputModule1Values.value = ETHYLENE_PID_OPEN;
+        analogOutputModule1Values.flag = 1;
+    }
+}
+
+void controlChamberEthylene::stateIndicator(){
+    if (analogOutputModule1Values.value > ETHYLENE_PID_CLOSE)
+    {
+        _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 1);
+    }
+    else
+    {
+        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 1);
+    }
+        
+}
+
+
+void controlChamberEthylene::run(double medidaSensor){
+    this->readEthylene(medidaSensor);
+    this->alarm(); //aqui puede haber un error pero no se
+    this->ethyleneControl();
+    this->enable();
+    this->forced();
+    this->stateIndicator();
+
+    //------Funcion que ejecuta si esta activo el debuger----------
+    //------Funcion que ejecuta si esta activo el debuger----------
+        String strDebug;
+        strDebug = F("-------Console Ethylene Control -------------------------------------\n");
+        strDebug +=F("Setpoint : "); 
+        strDebug += String(ethyleneSetpoint,DEC);
+        strDebug = F("\n");
+        strDebug +=F("Sensor Input  : "); 
+        strDebug += String(calculatedSensorValues,DEC);
+        strDebug = F("\n");
+        strDebug +=F("Valor PID: "); 
+        strDebug += String(analogOutputModule1Values,DEC);
+        strDebug = F("\n");
+        strDebug = F("--------------------------------------------\n");
+        debugControlEthylene(strDebug);
+    //----------------
+}
+
+
+void controlChamberEthylene::getAlarmOnGeneral(){
+    return alarmOnGeneral;
+}
+
+int controlChamberEthylene::getAnalogOutputModule1ValuesEthylene(){
+    return analogOutputModule1Values.value;
+}
+
+bool controlChamberEthylene::getAnalogOutputModule1FlagEthylene(){
+    bool m_resp = analogOutputModule1Values.flag;
+    analogOutputModule1Values.flag = 0; // indicar que fue atendida
+    return m_resp;
+}
+
+
+
+void controlChamberEthylene::~controlChamberEthylene(){
+
 }
 

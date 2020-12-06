@@ -56,18 +56,19 @@ int* timerNeutro3Pointer = &timerNeutro3;
 int timerNeutro4 = 0;
 int* timerNeutro4Pointer = &timerNeutro4;
 
+/*
 int timerGoOffAlarmTemperature = 0;
 int* timerGoOffAlarmTemperaturePointer = &timerGoOffAlarmTemperature;
-
+*/
 /*
 int timerGoOffAlarmEthylene = 0;
 int* timerGoOffAlarmEthylenePointer = &timerGoOffAlarmEthylene;
 */
 
-
+/*
 int timerLimitAlarmTemperature = 0;
 int* timerLimitAlarmTemperaturePointer = &timerLimitAlarmTemperature;
-
+*/
 
 /*
 int timerLimitAlarmEthylene = 0;
@@ -330,9 +331,9 @@ ISR(TIMER5_OVF_vect)
     *timerNeutro4Pointer -= 1;
   }
 
-  if (*timerGoOffAlarmTemperaturePointer > 0)
+  if (timerGoOffAlarmTemperature > 0)
   {
-    *timerGoOffAlarmTemperaturePointer -= 1;
+    timerGoOffAlarmTemperature -= 1;
   }
 
   if (timerGoOffAlarmhumidity > 0)
@@ -350,9 +351,9 @@ ISR(TIMER5_OVF_vect)
     timerGoOffAlarmCO2 -= 1;
   }
 
-  if (*timerLimitAlarmTemperaturePointer > 0)
+  if (timerLimitAlarmTemperature > 0)
   {
-    *timerLimitAlarmTemperaturePointer -= 1;
+    timerLimitAlarmTemperature -= 1;
   }
 
   if (timerLimitAlarmHumidity > 0)

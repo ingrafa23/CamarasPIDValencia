@@ -23,6 +23,11 @@ int timerGoOffAlarmEthylene = 0;
 int timerLimitAlarmEthylene = 0;
 //-----------------------
 
+//timer temperatura
+int timerLimitAlarmTemperature = 0;
+int timerGoOffAlarmTemperature = 0;
+///------------------------------
+
 
 
 void setTimerIntEthyleneFlow(unsigned long v){

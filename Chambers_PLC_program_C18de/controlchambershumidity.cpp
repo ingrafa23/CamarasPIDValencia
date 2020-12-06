@@ -1,5 +1,4 @@
 #include "controlchambershumidity.h"
-#include "constPID.h"
 #include "HoldingRegisterControl.h"
 #include "variablesAlarm.h"
 #include "variablestimer.h"
@@ -17,7 +16,7 @@ controlchambershumidity::controlchambershumidity(ModbusTCPServer *modbusTCPServe
                         addressOffset + 79,             // LowLimit1
                         addressOffset + 80,             // HighLimit1
                         addressOffset + 81,             // zeroSensor1
-                        addressOffset + 92,             // spanSensor1
+                        addressOffset + 82,             // spanSensor1
                         CONST_NORMALIZATION_HUMIDITY_PID);   // constante de normalización humidity
     //-----------------
     //--------------------------------
@@ -240,31 +239,31 @@ void controlchambershumidity::humidityControl(bool autoSelectorValue){
 
 void controlchambershumidity::run(double medidaSendor,bool autoSelectorValue){
   this->readHumidity(medidaSendor);
-    this->alarm(); //aqui puede haber un error pero no se
-    this->humidityControl(autoSelectorValue);
-    this->enable();
-    this->forced();
-    this->writeIO();
-    this->stateIndicator();
+  this->alarm(); //aqui puede haber un error pero no se
+  this->humidityControl(autoSelectorValue);
+  this->enable();
+  this->forced();
+  this->writeIO();
+  this->stateIndicator();
 
-    //------Funcion que ejecuta si esta activo el debuger----------
-    String strDebug;
-    strDebug = F("-------Console humidity -------------------------------------\n");
-    strDebug +=F("Setpoint : "); 
-    strDebug += String(humiditySetpoint,DEC);
-    strDebug = F("\n");
-    strDebug +=F("Sensor Input  : "); 
-    strDebug += String(calculatedSensorValues,DEC);
-    strDebug = F("\n");
-    strDebug +=F("humidityCycleTOn: "); 
-    strDebug += String(humidityCycleTOn,DEC);
-    strDebug = F("\n");
-    strDebug +=F("humidityCycleTOff: "); 
-    strDebug += String(humidityCycleTOff,DEC);
-    strDebug = F("\n");
-    strDebug = F("--------------------------------------------\n");
-    this->debugControlHumidity(strDebug);
-    //----------------------------------------------------------------
+  //------Funcion que ejecuta si esta activo el debuger----------
+  String strDebug;
+  strDebug = F("-------Console humidity -------------------------------------\n");
+  strDebug +=F("Setpoint : "); 
+  strDebug += String(humiditySetpoint,DEC);
+  strDebug = F("\n");
+  strDebug +=F("Sensor Input  : "); 
+  strDebug += String(calculatedSensorValues,DEC);
+  strDebug = F("\n");
+  strDebug +=F("humidityCycleTOn: "); 
+  strDebug += String(humidityCycleTOn,DEC);
+  strDebug = F("\n");
+  strDebug +=F("humidityCycleTOff: "); 
+  strDebug += String(humidityCycleTOff,DEC);
+  strDebug = F("\n");
+  strDebug = F("--------------------------------------------\n");
+  this->debugControlHumidity(strDebug);
+  //----------------------------------------------------------------
 
 
 }

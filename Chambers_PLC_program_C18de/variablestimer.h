@@ -49,6 +49,11 @@ extern int timerGoOffAlarmEthylene;
 extern int timerLimitAlarmEthylene;
 //-----------------------
 
+//timer temperatura
+extern int timerLimitAlarmTemperature;
+extern int timerGoOffAlarmTemperature;
+///-------------------
+
 
 extern struct structMicroCut timerMicroCut;
 extern struct structTimer timerInyectionEthyleneFlow;

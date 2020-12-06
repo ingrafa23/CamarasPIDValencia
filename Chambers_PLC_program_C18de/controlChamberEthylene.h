@@ -11,6 +11,14 @@
 #include "consoladebug.h"
 #include "mapsensor.h"
 
+//ETHYLENE PID CONTROL
+  #define CONST_NORMALIZATION_ETHYLENE_PID 1.0
+  //#define ETHYLENE_PID_LIMIT_MIN 13500 //minimo PID
+  #define ETHYLENE_PID_LIMIT_MIN 13500 //minimo PID
+  #define ETHYLENE_PID_LIMIT_MAX 15000//16200 //Maximo PID
+  #define ETHYLENE_PID_CLOSE 4000 // minimo forzado
+  #define ETHYLENE_PID_OPEN 20000 // maximo forzado 
+
 
 class controlChamberEthylene
 {
@@ -22,7 +30,8 @@ private:
     mapsensor* _mapsensor;
     //---
     PID* ethylenePID;
-    
+    double valueEthyleneNormalization; 
+    double valueEthyleneSetpointNormalization; 
     double ethyleneSetpoint, ethylenePIDOutput;
 
     bool ethylDownActivator;
@@ -48,29 +57,35 @@ private:
     double calculatedSensorValues;
     bool alarmOnGeneral;
 
+    struct StructValidationPID ValidationPIDControlethylene;
+
+    //Salidas
+    struct controlchamberethyleneAnalogOutputModule1
+    {
+        int value;
+        bool flag;
+    }analogOutputModule1Values;
+    
+    
+
 
 public:
     controlChamberEthylene(ModbusTCPServer *modbusTCPServer,int maddressOffset);
 
     void setup();
-    
-    void run(double medidaSendor);
+    void run(double medidaSensor);
     void enable();
     void forced();
     void alarm();
-    void writeIO();
     bool getAlarmOnGeneral();
     
     //Control PID de ethyleneControl
-    void ethyleneControl(int* ethyleneInyectionTimesPointer,
-                         bool* ethyleneInyectionStatusPointer);
+    void ethyleneControl();
     
     void readEthylene(double medidaSensor);
-    int getAnalogOutputModule1ValuesEthylene(unsigned char _pos);
+    int getAnalogOutputModule1ValuesEthylene();
+    bool getAnalogOutputModule1FlagEthylene();
     void stateIndicator(void);
-
-    bool getPreviusMode();
-    void setEthylUpActivator(bool state);
 
     ~controlChamberEthylene();
 }

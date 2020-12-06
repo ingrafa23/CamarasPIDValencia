@@ -10,6 +10,7 @@
 #include "controlchamberco2.h"
 #include "controlChamberEthylene.h"
 #include "controlchambershumidity.h"
+#include "controlChamberEthyleneFlow.h"
 //lectura de sensores
 #include "readsensor.h"
 
@@ -41,7 +42,7 @@
 #define analogOutputModule1ValuesCo2_0        0
 #define analogOutputModule1ValuesCo2_1        1
 #define analogOutputModule1ValuesEthylene     2
-#define analogOutputModule1ValuesEthylene     3
+#define analogOutputModule1ValuesTemp         3
 
 
 
@@ -52,6 +53,8 @@ class Chamber
   readsensor * readsensorInput;
   controlchamberco2 * _controlchamberco2;
   controlchambershumidity* _controlchambershumidity;
+  controlChamberEthylene * _controlChamberEthylene;
+  controlChamberEthyleneFlow* _controlChamberEthyleneFlow;
 
   //Estado del modo de desverdozacion-conservasion
     //-------------------------------------------------
@@ -190,7 +193,7 @@ class Chamber
     
 
     //funciones privadas para hacer debuggear en cada uno de los sistemas de control
-    unsigned char debugEstadoModoDesverdizacion
+    unsigned char debugEstadoModoDesverdizacion;
     void debugControlHumidity();
     void debugControlEthylene();
     void debugControlEthyleneFlow();
