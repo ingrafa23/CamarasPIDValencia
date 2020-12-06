@@ -24,10 +24,10 @@
 // Macros asosiadas al holdregister para el sistema de control forzado
 // fan 
 #define FORCED_SAFETY_RELAY_RESET               0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 0)
-#define FORCED_INPUT_FAN_1                      0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 1)
-#define FORCED_INPUT_FAN_2                      0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 2)
-#define FORCED_OUTPUT_FAN_1                     0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 3)
-#define FORCED_OUTPUT_FAN_2                     0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 4)
+#define FORCED_INPUT_FAN_1                            _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 1)
+#define FORCED_INPUT_FAN_2                            _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 2)
+#define FORCED_OUTPUT_FAN_1                           _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 3)
+#define FORCED_OUTPUT_FAN_2                           _modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 4)
 #define FORCED_AEROHEATERS                      0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 5)
 #define FORCED_HUMIDITY_WATER_VALVES            0      //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 6)
 
@@ -39,17 +39,6 @@
 #define FORCED_EVAPORATOR_FAN_ACTIVATOR         0       //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 11)
 #define FORCED_ALARM_SET                        0       //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 12)
 #define FORCED_ETHYLENE                         0       //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 336, 13)
-
-
-// Macros asosiadas al holdregister para verificar si estan habilitados los sistemas de control
-#define ENABLE_CONTROL_TEMPERATURE_EXTERNAL       1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 0)
-#define ENABLE_CONTROL_TEMPERATURE_AEROTERMO      1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 1)
-#define ENABLE_CONTROL_HUMIDITY                   1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 2)
-#define ENABLE_CONTROL_CO2                        1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 3)
-#define ENABLE_ETHYLENE                           1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 4)
-#define ENABLE_ETHYLENE_FLOW                      1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 5)
-#define ENABLE_CONTROL_CO2_ON_OFF                 1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 6)
-#define ENABLE_CONTROL_CO2_PID                    1   //_modbusTCPServer->holdingRegisterReadBit(addressOffset + 337, 7)
 
 
 // Macros asociadas al holdregister  inicio de ciclo en balance de gaces -  modo mantenimineto
@@ -117,24 +106,6 @@ extern struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
 // definicion del auto selector
 #define AUTO_TEL_SELECTOR_STATE    _modbusTCPServer->holdingRegisterReadBit(addressOffset + 256, 11)
 
-//Holdregister Indicadores de Estado
-
-#define INDICATE_STATE_INPUT_FAN_1_ON     _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2)
-
-#define INDICATE_STATE_INPUT_FAN_1_OFF  _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 2)
-
-#define SET_INDICATE_STATE_OUTPUT_FAN_1(mState)               (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 3);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 3);})    //hr 338,3
-#define SET_INDICATE_STATE_INPUT_FAN_2(mState)                (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 12);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 12);})  //hr 338,12
-#define SET_INDICATE_STATE_OUTPUT_FAN_2(mState)               (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 13);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 13);})  //hr 338,13
-#define SET_INDICATE_STATE_AEROHEATERS(mState)      //poner a 1 todos los booleanos de hr 259  
-#define SET_INDICATE_STATE_HUMIDITY_WATER_VALVES(mState)      (if(mState){_modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 0);}else{_modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 0);})    //hr 338,0
-#define SET_INDICATE_STATE_HUMIDITY_AIR_VALVES(mState)   //hr 338,1
-#define SET_INDICATE_STATE_HEATING_REQUEST(mState)   //hr 338,15
-#define SET_INDICATE_STATE_COOLING_REQUEST(mState)   //hr 339,0
-#define SET_INDICATE_STATE_EVAPORATOR_FAN_ACTIVATOR(mState)   //hr 339,1
-#define SET_INDICATE_STATE_ALARM_SET(mState)   //hr 339,4
-#define SET_INDICATE_STATE_ETILENO_VALVE(mState)  //338,1
-#define SET_INDICATE_STATE_ DOOR_1_OPEN_DETECT(mState)  //hr 1,4
 
 
 #endif

@@ -45,17 +45,9 @@
   #define ETHYLENE__FLOW_PID_LIMIT_MAX     18000
   #define ETHYLENE__FLOW_PID_LIMIT_CLOSE   4000
 
-  // contantes del PID CO2
-  //Variables de normalizacion
-  double valueCO2Normalization;  
-  double valueCO2SetpointNormalization;
   
-  //Limites de la Salida PID CO2
-  #define PID_CO2_CONTROL_MIN 6500.0
-  #define PID_CO2_CONTROL_MAX 20000.0 
-
-  //constante de normalizacion de la entrada del PID CO2
-  #define CONST_NORMALIZATION_CO2_PID 100.0  
+  
+  
 
   // minimo forzado
   #define CO2_PID_CLOSE 4000

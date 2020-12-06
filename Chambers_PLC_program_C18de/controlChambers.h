@@ -6,6 +6,10 @@
 #include <PID_v1.h>
 #include <Filter.h>
 
+//incluimos la clase de control CO2
+#include "controlchamberco2.h"
+#include "readsensor.h"
+
 //Definiciones de modo del Etileno
 #define MODO_INYECCION_INICIAL        1
 #define MODO_INYECCION_MANTENIMIENTO  2
@@ -16,6 +20,10 @@ class Chamber
 {
   private:
 
+  readsensor * readsensorInput;
+  controlchamberco2 * _controlchamberco2;
+  int *timerGoOffAlarmCO2Pointer;
+  int *timerLimitAlarmCO2Pointer;
   //Estado del modo de desverdozacion-conservasion
     //-------------------------------------------------
     unsigned char estadoModoDesverdizacion;
@@ -37,7 +45,7 @@ class Chamber
     int _chamber;
     int addressOffset;
     int eepromOffset;
-    int numHoldingRegistersAddresses = 345;
+    int numHoldingRegistersAddresses = 370;
     int numEepromAddresses = 500;
     int rawValueInputModule1[8];
     double calculatedSensorValues[8];
@@ -157,7 +165,7 @@ class Chamber
     void debugControlHumidity();
     void debugControlEthylene();
     void debugControlEthyleneFlow();
-    void debugControlCo2();
+    void debugControlCo2(String mdebug);
     void debugControlTemp();
     
     //Auto selector selection
@@ -175,6 +183,9 @@ class Chamber
             ModbusTCPClient* modbusTCPClient2,
             int &holdingRegisterPerChamber);
     init(int *timerAlarmNoVentilationPointer,int *timerOpenDoorTimeAlarm1Pointer,int *timerOpenDoorTimeAlarm2Pointer);
+
+    //***el init final
+    init(int *timerGoOffAlarmCO2Pointer,int *timerLimitAlarmCO2Pointer);
     writeToEeprom();
 
     //Control de temperatura
@@ -223,6 +234,12 @@ class Chamber
            int* timerAlarmNoVentilationPointer,
            int* timerOpenDoorTimeAlarm1Pointer,
            int* timerOpenDoorTimeAlarm2Pointer);
+
+    //Escritura de los Valores Analogicos
+    void run();
+    readAnalogValuesInput();
+    //este es uno nuevo no vorrar
+    alarmsGeneral();
 
     //Metodo de forzado para las salidas de Humedad, CO2 y Ethylene
     void forcedControl();

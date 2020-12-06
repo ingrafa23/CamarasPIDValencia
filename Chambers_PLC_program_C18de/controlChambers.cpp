@@ -7,6 +7,10 @@
 #include "miscellaneous.h"
 #include "consoladebug.h"
 
+
+
+
+
 unsigned long lastValueInputFan1;
 unsigned long lastValueOutputFan1;
 unsigned long lastValueInputFan2;
@@ -41,6 +45,12 @@ Chamber::Chamber(int chamber,
   holdingRegisterPerChamber += numHoldingRegistersAddresses;
   addressOffset = _chamber * numHoldingRegistersAddresses;
   eepromOffset = _chamber * numEepromAddresses;
+//---------------------------------------------------
+  readsensorInput = new readsensor(&_modbusTCPClient1);
+  
+  _controlchamberco2 = new controlchamberco2(&modbusTCPServer,addressOffset);
+  
+  //--------------------------------
 
   humidityPID = new PID(&valueHumidityNormalization, //----> Setpoint normalizado entre 0 y 1
                         &humidityPIDOutput,
@@ -109,16 +119,20 @@ Chamber::Chamber(int chamber,
 
 }
 
-Chamber::init(int *timerAlarmNoVentilationPointer,
+/*Chamber::init(int *timerAlarmNoVentilationPointer,
               int *timerOpenDoorTimeAlarm1Pointer,
-              int *timerOpenDoorTimeAlarm2Pointer)
+              int *timerOpenDoorTimeAlarm2Pointer)*/
+init(int *mtimerGoOffAlarmCO2Pointer,int *mtimerLimitAlarmCO2Pointer)
 {
+  *timerGoOffAlarmCO2Pointer = &mtimerGoOffAlarmCO2Pointer;
+  *timerLimitAlarmCO2Pointer = &mtimerLimitAlarmCO2Pointer;
 
   //inicializo los timer de alamr a de puertas y ventilador 
+/* pilas esto no debe estar aqui
   *timerAlarmNoVentilationPointer = hour2seg(MAX_TIME_ALARM_NO_VENTILATION);
   *timerOpenDoorTimeAlarm1Pointer = MAX_TIME_OPEN_DOOR_1;
   *timerOpenDoorTimeAlarm2Pointer = MAX_TIME_OPEN_DOOR_2;
-
+*/
   //Get persisten variables from eeprom
   int counter = 0;
 
@@ -238,9 +252,37 @@ Chamber::temperatureControl()
          _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 28)))
     {
       digitalWrite(CONTROL_HEATING_REQUEST, LOW);
-      digitalWrite(CONTROL_COOLING_REQUEST, HIGH);
+     
       _modbusTCPServer->holdingRegisterClearBit(addressOffset + 250, 9);
+      /////////////////
+      if(flag)
+      {
+      digitalWrite(CONTROL_COOLING_REQUEST, HIGH);
       _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 8);
+      }
+      else
+      {
+      digitalWrite(CONTROL_COOLING_REQUEST, LOW);
+      _modbusTCPServer->holdingRegisterSetBit(addressOffset + 250, 8);  
+      }
+      //////////////////
+
+      if(flaghabilitado=1&&flagforzado=0)
+      {
+      digitalWrite(CONTROL_COOLING_REQUEST, LOW);
+      }
+
+      ///////////
+
+      digitalWrite(CONTROL_COOLING_REQUEST, LOW); --> variable 
+
+      final del programa
+
+      VARIABLE_ALARM_INCLUDE
+
+
+
+
     }
     //////////////////////////////////////////////////
 
@@ -367,11 +409,16 @@ Chamber::temperatureControl()
         _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16) -
         _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 22))
     {
+      if(flag)
+      {
       digitalWrite(AEROHEATERS, HIGH);
 
       uint16_t value = _modbusTCPServer->holdingRegisterRead(addressOffset + 259);
       value |= 0xFF;
       _modbusTCPServer->holdingRegisterWrite(addressOffset + 259, value);
+      }
+      else
+      {}
     }
 
     if (calculatedSensorValues[0] >=
@@ -425,7 +472,7 @@ Chamber::humidityControl(int *humidityInyectionTimesPointer, bool *humidityInyec
         humidityCycleTOn = 600;
         humidityCycleTOff = 10;
       }
-      else if (relativeError <= (_modbusTCPServer->holdingRegisterReadFloat(addressOffset + 137) / 100) - 1.0)
+      else if (relativeError <= 0)
       {
         
         humidityPID->SetMode(MANUAL);
@@ -440,7 +487,7 @@ Chamber::humidityControl(int *humidityInyectionTimesPointer, bool *humidityInyec
         humidityPID->SetMode(AUTOMATIC);
         pidCycleControlHumidity = 1;
         _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 0);
-      }
+      
 
       humidityPID->SetTunings((double)_modbusTCPServer->holdingRegisterRead(addressOffset + 43) / CONST_DIVISION_KP_HUMIDITY,
                               (double)_modbusTCPServer->holdingRegisterRead(addressOffset + 44) / CONST_DIVISION_KI_HUMIDITY,
@@ -486,6 +533,7 @@ Chamber::humidityControl(int *humidityInyectionTimesPointer, bool *humidityInyec
         _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 0);
         _modbusTCPServer->holdingRegisterClearBit(addressOffset + 336, 0);
         pidCycleControlHumidity = 0;
+      }
       }
     }
     else
@@ -666,9 +714,21 @@ Chamber::CO2Control(int *timerInitializationFanPointer)
       }
       else
       {
+        
+        if(flag)
+        {digitalWrite(INPUT_FAN_1, HIGH);
+        }
+        else
+        {
+        digitalWrite(INPUT_FAN_1, LOW);
+        
+        }
+
+
+
         _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 2);
         _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 3);
-        digitalWrite(INPUT_FAN_1, HIGH);
+       // digitalWrite(INPUT_FAN_1, HIGH);
         digitalWrite(OUTPUT_FAN_1, HIGH);
         digitalWrite(INPUT_FAN_2, HIGH);
         digitalWrite(OUTPUT_FAN_2, HIGH);
@@ -700,11 +760,9 @@ Chamber::CO2Control(int *timerInitializationFanPointer)
           
         }
         
-        //------Funcion que ejecuta si esta activo el debuger----------
-        debugControlCo2();
-        //------------------------------------------------------------
+       
+      }
 
-        
       }
     }
     else
@@ -924,7 +982,7 @@ Chamber::getRawValues1()
 
 Chamber::writeAnalogValues()
 {
-  
+  analogOutputModule1Values[0] = getCo2writeAnalogValues(1)
   _modbusTCPClient2->beginTransmission(HOLDING_REGISTERS, 40, 4);
 
   for (int i = 0; i < 4; i++)
@@ -1857,7 +1915,7 @@ void Chamber::enableInputOutput(){
 
   if(!ENABLE_AEROHEATERS){
     digitalWrite(AEROHEATERS, LOW);
-    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 259);
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 259);// limpieza de uno a uno
   }
 
   if(!ENABLE_HUMIDITY_WATER_VALVES){
@@ -2073,23 +2131,7 @@ void Chamber::debugControlEthyleneFlow(){
   }
 }
 
-/* funcion para debugear el control de co2 */
-void Chamber::debugControlCo2(){
-  if (debugConsole.co2)
-  {
-    unsigned long timeConsoleIn = millis();
-    if(timeConsoleIn>1000){//para que se imprima cada 1000ms
-      //--------------aca se imprime todo lo que quiera
-      Serial.println("-------Console CO2 -------------------------------------");
-      Serial.print("ValidationPIDCO2.flag : "); Serial.println(ValidationPIDCO2.flag);
-      Serial.print("CO2_Setpoint : "); Serial.println(CO2Setpoint);
-      Serial.print("Sensor CO2 V1 : "); Serial.println(analogOutputModule1Values[0] );
-      Serial.print("Sensor CO2 V2 : "); Serial.println(analogOutputModule1Values[1] );
-      Serial.print("Salida PID CO2_Control: "); Serial.println(CO2PIDOutput);
-      Serial.println("-------________________--------------------------------");
-    }   
-  }
-}
+
 
 /* funcion para debugear el control de temperatura */
 void Chamber::debugControlTemp(){
@@ -2242,45 +2284,7 @@ void Chamber::stateAutoTelSelector(void){
   //----------> Tarea 17
   // indicadoresEstados es la funcion encargada de verficar las Salidas digitales 
   void Chamber::indicadoresEstados(void){
-    //Salida INPUT_FAN_1
-    if (digitalRead(INPUT_FAN_1))
-    {
-      INDICATE_HR_STATE_INPUT_FAN_1_ON;
-    }
-    else
-    {
-      INDICATE_HR_STATE_INPUT_FAN_1_OFF;
-    }
-
-    //Salida INPUT_FAN_2
-    if (digitalRead(INPUT_FAN_2))
-    {
-      INDICATE_HR_STATE_INPUT_FAN_2_ON;
-    }
-    else
-    {
-      INDICATE_HR_STATE_INPUT_FAN_2_OFF;
-    }
-
-    //Salida OUTPUT_FAN_1
-    if (digitalRead(OUTPUT_FAN_1))
-    {
-      INDICATE_HR_STATE_OUTPUT_FAN_1_ON;
-    }
-    else
-    {
-      INDICATE_HR_STATE_OUTPUT_FAN_1_OFF;
-    }
-
-    //Salida OUTPUT_FAN_2
-    if (digitalRead(OUTPUT_FAN_2))
-    {
-      INDICATE_HR_STATE_OUTPUT_FAN_2_ON;
-    }
-    else
-    {
-      INDICATE_HR_STATE_OUTPUT_FAN_2_OFF;
-    }
+    
 
     //Salida AEROHEATERS
     if (digitalRead(AEROHEATERS))
@@ -2324,6 +2328,32 @@ void Chamber::stateAutoTelSelector(void){
     
     
   }
+
+
+//este es uno nuevo no borrar
+
+
+
+    void Chamber::alarmsGeneral(){
+      //ojo este debe ser de las alarmas generales
+
+  if(alarmOn == true || objcontrolchamberco2.getAlarmtGeneral() == true)
+  {
+    digitalWrite(ALARM_SET, HIGH);
+  }
+  else
+  {
+    digitalWrite(ALARM_SET, LOW);
+  }
+    }
+
+  void Chamber::run(){
+      //LEctura de todos los sensores Analogicos de entrada
+       readsensorInput->runReadSesor();
+       //cambiar estos timer a la funcion variablesTimer
+       _controlchamberco2->run(readsensorInput->getValueSensor(0),&timerGoOffAlarmCO2Pointer,&timerLimitAlarmCO2Pointer); 
+  }
+
 
 Chamber::~Chamber(){
   
