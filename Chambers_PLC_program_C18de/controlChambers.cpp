@@ -25,12 +25,19 @@ Chamber::Chamber(int chamber,
                  ModbusTCPServer *modbusTCPServer,
                  ModbusTCPClient *modbusTCPClient1,
                  ModbusTCPClient *modbusTCPClient2,
+                 ModbusTCPClient *modbusTCPClient3,
+                 ModbusTCPClient *modbusTCPClient4,
+                 ModbusTCPClient *modbusTCPClient5,
                  int &holdingRegisterPerChamber)
 {
   _chamber = chamber;
   _modbusTCPServer = modbusTCPServer;
   _modbusTCPClient1 = modbusTCPClient1;
   _modbusTCPClient2 = modbusTCPClient2;
+  //Tarea 12
+  _modbusTCPClient3 = modbusTCPClient3;
+  _modbusTCPClient4 = modbusTCPClient4;
+  _modbusTCPClient5 = modbusTCPClient5;
 
   holdingRegisterPerChamber += numHoldingRegistersAddresses;
   addressOffset = _chamber * numHoldingRegistersAddresses;
@@ -53,7 +60,89 @@ _mapsensorReadOutputFan2 = new mapsensor(_modbusTCPServer,
                         1);   // constante de normalización
 //----------------------------------------
 
-  readsensorInput = new readsensor(_modbusTCPClient1);
+//----Tarea 12
+_mapsensorReadPresionEtileno = new mapsensor(_modbusTCPServer,
+                        addressOffset + 340,            // Measure
+                        addressOffset + 64,             // LowLimit1
+                        addressOffset + 65,             // HighLimit1
+                        addressOffset + 66,             // zeroSensor1
+                        addressOffset + 67,             // spanSensor1
+                        1);   // constante de normalización
+//-------
+_mapsensorReadPinzaConsumo1 = new mapsensor(_modbusTCPServer,
+                        addressOffset + 321,            // Measure
+                        addressOffset + 179,             // LowLimit1
+                        addressOffset + 180,             // HighLimit1
+                        addressOffset + 181,             // zeroSensor1
+                        addressOffset + 182,             // spanSensor1
+                        1);   // constante de normalización
+//-------
+_mapsensorReadPinzaConsumo2 = new mapsensor(_modbusTCPServer,
+                        addressOffset + 323,            // Measure
+                        addressOffset + 183,             // LowLimit1
+                        addressOffset + 184,             // HighLimit1
+                        addressOffset + 185,             // zeroSensor1
+                        addressOffset + 186,             // spanSensor1
+                        1);   // constante de normalización
+//-------
+_mapsensorReadPinzaConsumo3 = new mapsensor(_modbusTCPServer,
+                        addressOffset + 325,            // Measure
+                        addressOffset + 187,             // LowLimit1
+                        addressOffset + 188,             // HighLimit1
+                        addressOffset + 189,             // zeroSensor1
+                        addressOffset + 190,             // spanSensor1
+                        1);   // constante de normalización
+//-------
+_mapsensorReadPinzaConsumo4 = new mapsensor(_modbusTCPServer,
+                        addressOffset + 327,            // Measure
+                        addressOffset + 191,             // LowLimit1
+                        addressOffset + 192,             // HighLimit1
+                        addressOffset + 193,             // zeroSensor1
+                        addressOffset + 194,             // spanSensor1
+                        1);   // constante de normalización
+
+//---------------------------------
+_mapsensorReadTemperaturaExterio = new mapsensor(_modbusTCPServer,
+                        addressOffset + 272,            // Measure
+                        addressOffset + 107,             // LowLimit1
+                        addressOffset + 108,             // HighLimit1
+                        addressOffset + 109,             // zeroSensor1
+                        addressOffset + 110,             // spanSensor1
+                        1);   // constante de normalización
+//------------------------------------------------------------------------                        
+_mapsensorReadHumedadExterior = new mapsensor(_modbusTCPServer,
+                        addressOffset + 268,            // Measure
+                        addressOffset + 111,             // LowLimit1
+                        addressOffset + 112,             // HighLimit1
+                        addressOffset + 113,             // zeroSensor1
+                        addressOffset + 114,             // spanSensor1
+                        1);   // constante de normalización
+//----------------------------------------------------------------------------
+
+_mapsensorReadPresionAgua= new mapsensor(_modbusTCPServer,
+                        addressOffset + 278,            // Measure
+                        addressOffset + 127,             // LowLimit1
+                        addressOffset + 128,             // HighLimit1
+                        addressOffset + 129,             // zeroSensor1
+                        addressOffset + 130,             // spanSensor1
+                        1);
+
+//---------------------------------
+
+_mapsensorReadPresionAire= new mapsensor(_modbusTCPServer,
+                        addressOffset + 276,            // Measure
+                        addressOffset + 121,             // LowLimit1
+                        addressOffset + 122,             // HighLimit1
+                        addressOffset + 123,             // zeroSensor1
+                        addressOffset + 124,             // spanSensor1
+                        1);
+//------------------------------------------------------------------------------
+
+  readsensorInput1 = new readsensor(_modbusTCPClient1);
+  readsensorInput2 = new readsensor(_modbusTCPClient2);
+  readsensorInput3 = new readsensor(_modbusTCPClient3);
+  readsensorInput4 = new readsensor(_modbusTCPClient4);
+  readsensorInput5 = new readsensor(_modbusTCPClient5);
 
   _controlchamberco2 = new controlchamberco2(_modbusTCPServer,addressOffset);
   _controlchambershumidity = new controlchambershumidity(_modbusTCPServer,addressOffset);
@@ -96,25 +185,110 @@ void Chamber::init()
   }
 }
 
+//Tarea 12
+//Botella etileno
+void Chamber::botellaEtileno(){
+  //lectura de sensore
+  _mapsensorReadPresionEtileno->mapFloatMeasurementSensorInt(readsensorInput2->getValueSensor(2));
+  int valorPresionEtileno = (int)_mapsensorReadPresionEtileno->getValueSensor();
+
+  if (valorPresionEtileno < 10)
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 338, 8);
+  }
+  else
+  {
+  
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 8);
+  }
+}
+
+//----------------------------------
+//Pinza de consumo
+void Chamber::pinzasConsumo(){
+  //lectura de sensore
+  _mapsensorReadPinzaConsumo1->mapFloatMeasurementSensorInt(readsensorInput3->getValueSensor(0));
+  _mapsensorReadPinzaConsumo2->mapFloatMeasurementSensorInt(readsensorInput3->getValueSensor(1));
+  _mapsensorReadPinzaConsumo3->mapFloatMeasurementSensorInt(readsensorInput3->getValueSensor(2));
+  _mapsensorReadPinzaConsumo4->mapFloatMeasurementSensorInt(readsensorInput3->getValueSensor(3));
+}
+
+//----------------
+void Chamber::temperaturaExterior(){
+  _mapsensorReadTemperaturaExterio->mapFloatMeasurementSensor(readsensorInput2->getValueSensor(3));
+}
+
+//-------------
+void Chamber::humedadExterior(){
+  _mapsensorReadHumedadExterior->mapFloatMeasurementSensorInt(readsensorInput2->getValueSensor(4));
+}
+
+//-------------------------
+void Chamber::presionAgua(){
+  _mapsensorReadPresionAgua->mapFloatMeasurementSensor(readsensorInput5->getValueSensor(4));
+  double valorPresionAgua = _mapsensorReadPresionAgua->getValueSensor();
+
+  if (valorPresionAgua < 10)
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 255, 4);
+  }
+  else
+  {
+  
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 255, 4);
+  }
+}
+
+//-------------------------
+void Chamber::presionAire(){
+  _mapsensorReadPresionAire->mapFloatMeasurementSensor(readsensorInput5->getValueSensor(5));
+  double valorPresionAire = _mapsensorReadPresionAire->getValueSensor();
+
+  if (valorPresionAire < 10)
+  {
+    _modbusTCPServer->holdingRegisterSetBit(addressOffset + 255, 5);
+  }
+  else
+  {
+    _modbusTCPServer->holdingRegisterClearBit(addressOffset + 255, 5);
+  }
+}
+
+
+//------------------------------
+
+
 //este es uno nuevo no borrar
 
 void Chamber::run(){
 //Lectura de todos los sensores Analogicos de entrada
-  readsensorInput->runReadSesor();
+  readsensorInput1->runReadSesor();
+  readsensorInput2->runReadSesor();
+  readsensorInput3->runReadSesor();
+  readsensorInput4->runReadSesor();
+  readsensorInput5->runReadSesor();
+
+  //Tarea 12
+  this->botellaEtileno();
+  this->temperaturaExterior();
+  this->humedadExterior();
+  this->presionAgua();
+  this->presionAire();
+  this->pinzasConsumo();
 
   //falta alarmas
 
   //run del control CO2
-  _controlchamberco2->run(readsensorInput->getValueSensor(rawValueInputModule1Co2));
+  _controlchamberco2->run(readsensorInput1->getValueSensor(rawValueInputModule1Co2));
   //run del control humidity
-  _controlchambershumidity->run(readsensorInput->getValueSensor(rawValueInputModule1Hum),autoSelectorValue);
+  _controlchambershumidity->run(readsensorInput1->getValueSensor(rawValueInputModule1Hum),autoSelectorValue);
   // run del control de ehtylene
-  _controlChamberEthylene->run(readsensorInput->getValueSensor(rawValueInputModule1Ethylene));
+  _controlChamberEthylene->run(readsensorInput1->getValueSensor(rawValueInputModule1Ethylene));
   // run control de ethylene flow
   _controlChamberEthyleneFlow->run(analogRead(ETHYLENE_FLOW_IN),_controlchamberco2->getAnalogOutputModule1ValuesCo2(0),
                               _controlchamberco2->getAnalogOutputModule1ValuesCo2(1),_controlchamberco2->getMinCo2());
   // run control de temperatura
-  _controlChamberTemperature->run(readsensorInput->getValueSensor(rawValueInputModule1Temp),autoSelectorValue);                         
+  _controlChamberTemperature->run(readsensorInput1->getValueSensor(rawValueInputModule1Temp),autoSelectorValue);                         
 
   //habilitadores
   this->enable();

@@ -49,7 +49,12 @@ class Chamber
 {
   private:
 
-  readsensor * readsensorInput;
+  readsensor * readsensorInput1;
+  readsensor * readsensorInput2;
+  readsensor * readsensorInput3;
+  readsensor * readsensorInput4;
+  readsensor * readsensorInput5;
+
   controlchamberco2 * _controlchamberco2;
   controlchambershumidity* _controlchambershumidity;
   controlChamberEthylene * _controlChamberEthylene;
@@ -59,6 +64,9 @@ class Chamber
     ModbusTCPServer* _modbusTCPServer;
     ModbusTCPClient* _modbusTCPClient1;
     ModbusTCPClient* _modbusTCPClient2;
+    ModbusTCPClient* _modbusTCPClient3;
+    ModbusTCPClient* _modbusTCPClient4;
+    ModbusTCPClient* _modbusTCPClient5;
    
     int _chamber;
     int addressOffset;
@@ -73,6 +81,20 @@ class Chamber
     mapsensor* _mapsensorReadOutputFan1;
     mapsensor* _mapsensorReadOutputFan2;
     //---
+    //----Tarea 12
+    mapsensor* _mapsensorReadPresionEtileno;
+    //--------------------------------------------
+    mapsensor* _mapsensorReadPinzaConsumo1;
+    mapsensor* _mapsensorReadPinzaConsumo2;
+    mapsensor* _mapsensorReadPinzaConsumo3;
+    mapsensor* _mapsensorReadPinzaConsumo4;
+    //----------------------------------------------
+    mapsensor* _mapsensorReadTemperaturaExterio;
+    mapsensor* _mapsensorReadHumedadExterior;
+    //----------------------------------------------
+    mapsensor* _mapsensorReadPresionAgua;
+    mapsensor* _mapsensorReadPresionAire;
+    //--------------------------------------------------
     double calculatedSensorValuesOutputFan1;
     double calculatedSensorValuesOutputFan2;
     //-------------------------------------------
@@ -114,6 +136,9 @@ class Chamber
             ModbusTCPServer* modbusTCPServer,
             ModbusTCPClient* modbusTCPClient1,
             ModbusTCPClient* modbusTCPClient2,
+            ModbusTCPClient* modbusTCPClient3,
+            ModbusTCPClient* modbusTCPClient4,
+            ModbusTCPClient* modbusTCPClient5,
             int &holdingRegisterPerChamber);
     void init();
 
@@ -125,7 +150,25 @@ class Chamber
 
     //mediciones
     void measurements();
+
+    //Botelal de etileno
+
+    void botellaEtileno();
+
+    //Pinzas de consumo
+    void pinzasConsumo();
     
+    //Temperatura Exterior
+    void temperaturaExterior();
+    //Humedad Exterior
+    void humedadExterior();
+
+  // Presion de agua
+  void presionAgua();
+
+  //Presion de Aire
+  void presionAire();
+
     //Escritura de los Valores Analogicos
     void writeAnalogValues();
     

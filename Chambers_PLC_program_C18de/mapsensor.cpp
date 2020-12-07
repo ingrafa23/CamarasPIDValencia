@@ -41,6 +41,18 @@ void mapsensor::mapFloatMeasurementSensor(int rawValueInputModule /*lectura del 
     valueNormalization = calculatedSensorValues / constNormalizacion;
 }
 
+void mapsensor::mapFloatMeasurementSensorInt(int rawValueInputModule /*lectura del sensor*/){
+
+    int LowLimit1 = _modbusTCPServer->holdingRegisterRead(addrLowLimit1);
+    int HighLimit1 = _modbusTCPServer->holdingRegisterRead(addrHighLimit1);
+    int zeroSensor1 = _modbusTCPServer->holdingRegisterRead(addrzeroSensor1);
+    int spanSensor1 = _modbusTCPServer->holdingRegisterRead(addrspanSensor1);
+    int filteredMeasure = filterSensor->update(rawValueInputModule);
+    calculatedSensorValues = mapFloat(filteredMeasure, zeroSensor1, spanSensor1, LowLimit1, HighLimit1);
+    _modbusTCPServer->holdingRegisterWriteFloat(addrMeasure, (int)calculatedSensorValues);
+    valueNormalization = calculatedSensorValues / constNormalizacion;
+}
+
 double mapsensor::getValueSensor(){
     return calculatedSensorValues;
 }

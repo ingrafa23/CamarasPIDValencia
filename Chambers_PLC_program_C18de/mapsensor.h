@@ -20,6 +20,7 @@ public:
                 int mConstNormalizacion);
 
     void mapFloatMeasurementSensor(int rawValueInputModule);
+    void mapFloatMeasurementSensorInt(int rawValueInputModule);
 
     double getValueSensor();
     double getValueSensorNormaliced();

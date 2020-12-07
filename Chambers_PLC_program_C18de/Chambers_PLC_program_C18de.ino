@@ -17,7 +17,23 @@ IPAddress analogInputModule1(192, 168, 1, 10);
 IPAddress analogOutputModule1(192, 168, 1, 11);
 IPAddress dns(192, 168, 1, 1);
 
+//Tarea 12
+IPAddress analogInputModule2(192, 168, 1, 8);
+IPAddress analogInputModule3(192, 168, 1, 14);
+IPAddress analogInputModule4(192, 168, 1, 15);
+IPAddress analogInputModule5(192, 168, 1, 10);
 
+EthernetClient ethernetClient2;
+EthernetClient ethernetClient3;
+EthernetClient ethernetClient4;
+EthernetClient ethernetClient5;
+
+ModbusTCPClient analogInputModule2Client(ethernetClient2);
+ModbusTCPClient analogInputModule3Client(ethernetClient3);
+ModbusTCPClient analogInputModule4Client(ethernetClient4);
+ModbusTCPClient analogInputModule5Client(ethernetClient5);
+
+///------fin tarea 12
 
 // Server instances creation
 EthernetServer server(502);
@@ -26,6 +42,7 @@ ModbusTCPServer modbusTCPServer;
 //Client instances creation
 EthernetClient ethernetClient1;
 EthernetClient ethernetClient2;
+
 ModbusTCPClient analogInputModule1Client(ethernetClient1);
 ModbusTCPClient analogOutputModule1Client(ethernetClient2);
 
@@ -70,6 +87,10 @@ void attacMicroCuts();
 Chamber chamber1(0,
                  &modbusTCPServer,
                  &analogInputModule1Client,
+                 &analogInputModule2Client,
+                 &analogInputModule3Client,
+                 &analogInputModule4Client,
+                 &analogInputModule5Client,
                  &analogOutputModule1Client,
                  holdingRegisterAmount);
 
@@ -145,17 +166,11 @@ void loop() {
   {
     chamber1.writeToEeprom();
   }
-  
-  
-  if (!analogInputModule1Client.connected() || !analogOutputModule1Client.connected()) {
+
+  //---------------------------------------
+  if (!analogInputModule1Client.connected()) {
     
     Serial.println("Attempting to connect to Modbus TCP server");
-
-    if (!analogOutputModule1Client.begin(analogOutputModule1, 502)) {
-      Serial.println("Analog Output Module 1 failed to connect!");
-    } else {
-      Serial.println("Analog Output Module 1 connected");
-    }
 
     //////-------------------------------------------------------------
     Serial.println("Attempting to connect to Modbus TCP server");
@@ -166,9 +181,53 @@ void loop() {
       Serial.println("Analog Input Module 1 connected");
     }
   } 
-  else
-  {
-    //------>Tarea 5
+
+  //------------------------------------------------------
+  if (!analogInputModule2Client.connected()) {
+    
+    Serial.println("Attempting to connect to Modbus TCP server");
+
+    //////-------------------------------------------------------------
+    Serial.println("Attempting to connect to Modbus TCP server");
+
+    if (!analogInputModule2Client.begin(analogInputModule2, 502)) {
+      Serial.println("Analog Input Module 2 failed to connect!");
+    } else {
+      Serial.println("Analog Input Module 2 connected");
+    }
+  } 
+  //-----------------------------------------------------
+  if (!analogInputModule3Client.connected()) {
+    
+    Serial.println("Attempting to connect to Modbus TCP server");
+
+    //////-------------------------------------------------------------
+    Serial.println("Attempting to connect to Modbus TCP server");
+
+    if (!analogInputModule2Client.begin(analogInputModule2, 502)) {
+      Serial.println("Analog Input Module 1 failed to connect!");
+    } else {
+      Serial.println("Analog Input Module 1 connected");
+    }
+  } 
+
+
+
+
+
+  // pendiente de revisar y agregar los !analogInputModuleXXXClient.connected() ||
+  if (!analogOutputModule1Client.connected()) {
+    
+    Serial.println("Attempting to connect to Modbus TCP server");
+
+    if (!analogOutputModule1Client.begin(analogOutputModule1, 502)) {
+      Serial.println("Analog Output Module 1 failed to connect!");
+    } else {
+      Serial.println("Analog Output Module 1 connected");
+    }
+  } 
+
+  //------>Tarea 5
     //Atiende la interrupcion de MicroCuts
     chamber1.atiendeMicroCutsInterrup(flagAttacMicroCutsPointer); 
     //----------------------
@@ -178,8 +237,8 @@ void loop() {
     chamber1.setaEmergency();
     //Aca se llama Todo el control
     chamber1.run();
-  }
 
+  
   //Ejecuta un interprete de la consola, para hacer debug
   //Funcion que ejecuta los comandos recibido del interprete o cosola debug
   tareaMainInterprete();
