@@ -22,7 +22,7 @@ controlchamberco2::controlchamberco2(ModbusTCPServer *modbusTCPServer,int maddre
   addressOffset = maddressOffset;
   //-----------------
   _mapsensor = new mapsensor(modbusTCPServer,
-                        addressOffset + 264,            // CO2 Measure
+                        addressOffset + 345,            // CO2 Measure
                         addressOffset + 87,             // LowLimit1
                         addressOffset + 88,             // HighLimit1
                         addressOffset + 89,             // zeroSensor1
@@ -113,6 +113,7 @@ void controlchamberco2::alarm(){
 void controlchamberco2::readCO2(double medidaSensor)
 {
   _mapsensor->mapFloatMeasurementSensor(medidaSensor);
+  _mapsensor->mapFloatLimitador(addressOffset + 264);
   valueCO2Normalization = _mapsensor->getValueSensorNormaliced();
   calculatedSensorValues = _mapsensor->getValueSensor();
 }

@@ -12,7 +12,7 @@ controlchambershumidity::controlchambershumidity(ModbusTCPServer *modbusTCPServe
     addressOffset = maddressOffset;
     //-----------------
     _mapsensor = new mapsensor(_modbusTCPServer,
-                        addressOffset + 266,            // humidity Measure
+                        addressOffset + 347,            // humidity Measure
                         addressOffset + 79,             // LowLimit1
                         addressOffset + 80,             // HighLimit1
                         addressOffset + 81,             // zeroSensor1
@@ -291,7 +291,13 @@ bool controlchambershumidity::getAlarmOnGeneral(){
 }
 
 void controlchambershumidity::readHumidity(double medidaSensor){
+
+   
+
     _mapsensor->mapFloatMeasurementSensor(medidaSensor);
+
+    _mapsensor->mapFloatLimitador(addressOffset + 266);
+
     valueHumidityNormalization = _mapsensor->getValueSensorNormaliced();
     calculatedSensorValues = _mapsensor->getValueSensor();
 }

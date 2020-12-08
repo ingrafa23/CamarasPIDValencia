@@ -23,15 +23,15 @@ IPAddress analogInputModule3(192, 168, 1, 14);
 IPAddress analogInputModule4(192, 168, 1, 15);
 IPAddress analogInputModule5(192, 168, 1, 10);
 
-EthernetClient ethernetClient2;
-EthernetClient ethernetClient3;
-EthernetClient ethernetClient4;
-EthernetClient ethernetClient5;
+EthernetClient ethernetAnalogInputClient2;
+EthernetClient ethernetAnalogInputClient3;
+EthernetClient ethernetAnalogInputClient4;
+EthernetClient ethernetAnalogInputClient5;
 
-ModbusTCPClient analogInputModule2Client(ethernetClient2);
-ModbusTCPClient analogInputModule3Client(ethernetClient3);
-ModbusTCPClient analogInputModule4Client(ethernetClient4);
-ModbusTCPClient analogInputModule5Client(ethernetClient5);
+ModbusTCPClient analogInputModule2Client(ethernetAnalogInputClient2);
+ModbusTCPClient analogInputModule3Client(ethernetAnalogInputClient3);
+ModbusTCPClient analogInputModule4Client(ethernetAnalogInputClient4);
+ModbusTCPClient analogInputModule5Client(ethernetAnalogInputClient5);
 
 ///------fin tarea 12
 
@@ -204,14 +204,40 @@ void loop() {
     //////-------------------------------------------------------------
     Serial.println("Attempting to connect to Modbus TCP server");
 
-    if (!analogInputModule2Client.begin(analogInputModule2, 502)) {
-      Serial.println("Analog Input Module 1 failed to connect!");
+    if (!analogInputModule3Client.begin(analogInputModule3, 502)) {
+      Serial.println("Analog Input Module 3 failed to connect!");
     } else {
-      Serial.println("Analog Input Module 1 connected");
+      Serial.println("Analog Input Module 3 connected");
     }
   } 
+  //-----------------------------------------------------
+  if (!analogInputModule4Client.connected()) {
+    
+    Serial.println("Attempting to connect to Modbus TCP server");
 
+    //////-------------------------------------------------------------
+    Serial.println("Attempting to connect to Modbus TCP server");
 
+    if (!analogInputModule3Client.begin(analogInputModule4, 502)) {
+      Serial.println("Analog Input Module 4 failed to connect!");
+    } else {
+      Serial.println("Analog Input Module 4 connected");
+    }
+  } 
+  //-----------------------------------------------------
+  if (!analogInputModule5Client.connected()) {
+    
+    Serial.println("Attempting to connect to Modbus TCP server");
+
+    //////-------------------------------------------------------------
+    Serial.println("Attempting to connect to Modbus TCP server");
+
+    if (!analogInputModule3Client.begin(analogInputModule5, 502)) {
+      Serial.println("Analog Input Module 5 failed to connect!");
+    } else {
+      Serial.println("Analog Input Module 5 connected");
+    }
+  } 
 
 
 

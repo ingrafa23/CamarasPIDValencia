@@ -19,25 +19,80 @@ unsigned int TimeGases;
 
 struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
 
+//--------------------------------------
+/* falta para implementar
+//------controlchamber.cpp --> barrido-------
+Variableanterior=Hr(0,1) //---- inicializar en el int y en barrido
+If (hr (0,1)!=variableanterior)
+{
+If (variableanterior=1)
+{
+Activador=1
+}
+if(HR(0,1)=0)
+{
+Activador=0
+}
+//---------------------------
+//---------
+
+
+If(activador=1) // 
+{
+  If (hr(338,11))
+  {
+
+    If( etileno > hr 361) // por una metodo pido el valor de etileno
+    {
+    Activar ventilador de entrada y salida y poner al máximo forza
+    // traduzco en una flag de activacion de ventiladores IN_FAN, OUT_FAN carta analogica a 20000
+    }
+    Else
+    {
+      If((setpoint < temperatura interior)&&(temperaturaexterior+1<temperaturainterior)&& timer hr363)
+      {
+      Activar ventilador de entrada y salida y poner al máximo forzar  flag de activacion de ventiladores IN_FAN, OUT_FAN carta analogica a 20000
+      Desactivar el frío control cooluing request cooling request deshabilitar
+      }
+      Else
+      {
+      Activar ventilador de entrada y salida y poner al máximo desforzar
+      Desactivar el frío control cooluing request cooling request habilitar
+      escribirá el hr 338,11 a 0
+      activador=0
+
+      }
+
+    }
+
+    }
+    }
+  }
+}
+*/
+//------------------------------------------
 
 
 Chamber::Chamber(int chamber,
                  ModbusTCPServer *modbusTCPServer,
                  ModbusTCPClient *modbusTCPClient1,
+                 ModbusTCPClient *modbusTCPAnalogInputClient2,
+                 ModbusTCPClient *modbusTCPAnalogInputClient3,
+                 ModbusTCPClient *modbusTCPAnalogInputClient4,
+                 ModbusTCPClient *modbusTCPAnalogInputClient5,
                  ModbusTCPClient *modbusTCPClient2,
-                 ModbusTCPClient *modbusTCPClient3,
-                 ModbusTCPClient *modbusTCPClient4,
-                 ModbusTCPClient *modbusTCPClient5,
                  int &holdingRegisterPerChamber)
 {
   _chamber = chamber;
   _modbusTCPServer = modbusTCPServer;
   _modbusTCPClient1 = modbusTCPClient1;
   _modbusTCPClient2 = modbusTCPClient2;
+
   //Tarea 12
-  _modbusTCPClient3 = modbusTCPClient3;
-  _modbusTCPClient4 = modbusTCPClient4;
-  _modbusTCPClient5 = modbusTCPClient5;
+  _modbusTCPAnalogInputClient2 = modbusTCPAnalogInputClient2;
+  _modbusTCPAnalogInputClient3 = modbusTCPAnalogInputClient3;
+  _modbusTCPAnalogInputClient4 = modbusTCPAnalogInputClient4;
+  _modbusTCPAnalogInputClient5 = modbusTCPAnalogInputClient5;
 
   holdingRegisterPerChamber += numHoldingRegistersAddresses;
   addressOffset = _chamber * numHoldingRegistersAddresses;
@@ -103,7 +158,7 @@ _mapsensorReadPinzaConsumo4 = new mapsensor(_modbusTCPServer,
 
 //---------------------------------
 _mapsensorReadTemperaturaExterio = new mapsensor(_modbusTCPServer,
-                        addressOffset + 272,            // Measure
+                        addressOffset + 353,            // Measure
                         addressOffset + 107,             // LowLimit1
                         addressOffset + 108,             // HighLimit1
                         addressOffset + 109,             // zeroSensor1
@@ -111,7 +166,7 @@ _mapsensorReadTemperaturaExterio = new mapsensor(_modbusTCPServer,
                         1);   // constante de normalización
 //------------------------------------------------------------------------                        
 _mapsensorReadHumedadExterior = new mapsensor(_modbusTCPServer,
-                        addressOffset + 268,            // Measure
+                        addressOffset + 349,            // Measure
                         addressOffset + 111,             // LowLimit1
                         addressOffset + 112,             // HighLimit1
                         addressOffset + 113,             // zeroSensor1
@@ -139,11 +194,11 @@ _mapsensorReadPresionAire= new mapsensor(_modbusTCPServer,
 //------------------------------------------------------------------------------
 
   readsensorInput1 = new readsensor(_modbusTCPClient1);
-  readsensorInput2 = new readsensor(_modbusTCPClient2);
-  readsensorInput3 = new readsensor(_modbusTCPClient3);
-  readsensorInput4 = new readsensor(_modbusTCPClient4);
-  readsensorInput5 = new readsensor(_modbusTCPClient5);
-
+  readsensorInput2 = new readsensor(_modbusTCPAnalogInputClient2);
+  readsensorInput3 = new readsensor(_modbusTCPAnalogInputClient3);
+  readsensorInput4 = new readsensor(_modbusTCPAnalogInputClient4);
+  readsensorInput5 = new readsensor(_modbusTCPAnalogInputClient5);
+//---------------------------------------------------------------------------------
   _controlchamberco2 = new controlchamberco2(_modbusTCPServer,addressOffset);
   _controlchambershumidity = new controlchambershumidity(_modbusTCPServer,addressOffset);
   _controlChamberEthylene = new controlChamberEthylene(_modbusTCPServer,addressOffset);
@@ -216,11 +271,13 @@ void Chamber::pinzasConsumo(){
 //----------------
 void Chamber::temperaturaExterior(){
   _mapsensorReadTemperaturaExterio->mapFloatMeasurementSensor(readsensorInput2->getValueSensor(3));
+  _mapsensorReadTemperaturaExterio->mapFloatLimitador(addressOffset + 272);
 }
 
 //-------------
 void Chamber::humedadExterior(){
   _mapsensorReadHumedadExterior->mapFloatMeasurementSensorInt(readsensorInput2->getValueSensor(4));
+  _mapsensorReadTemperaturaExterio->mapFloatLimitador(addressOffset + 268);
 }
 
 //-------------------------
@@ -326,6 +383,7 @@ void Chamber::stateIndicator(){
     _modbusTCPServer->holdingRegisterClearBit(addressOffset + 339, 1);
   }
   //----------------------------------------------------------------
+  /*
   if (digitalRead(SAFETY_RELAY_RESET))
   {
     //_modbusTCPServer->holdingRegisterSetBit(addressOffset + 339, xxx);
@@ -334,7 +392,7 @@ void Chamber::stateIndicator(){
   {
     //_modbusTCPServer->holdingRegisterClearBit(addressOffset + 339, xxx);
   }
-  
+  */
   //-----------
   if (autoSelectorValue)
   {

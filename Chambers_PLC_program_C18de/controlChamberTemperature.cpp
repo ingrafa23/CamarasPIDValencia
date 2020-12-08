@@ -14,7 +14,7 @@ controlChamberTemperature::controlChamberTemperature(ModbusTCPServer *modbusTCPS
 
     //-----------------
     _mapsensor = new mapsensor(_modbusTCPServer,
-                        addressOffset + 270,             // Measure
+                        addressOffset + 351,             // Measure
                         addressOffset + 75,             // LowLimit1
                         addressOffset + 76,             // HighLimit1
                         addressOffset + 77,             // zeroSensor1
@@ -424,6 +424,7 @@ void controlChamberTemperature::TemperatureControl(bool autoSelectorValue){
 
 void controlChamberTemperature::readTemperature(double medidaSensor){
     _mapsensor->mapFloatMeasurementSensor(medidaSensor);
+    _mapsensor->mapFloatLimitador(addressOffset + 270);
    calculatedSensorValues = _mapsensor->getValueSensor();
 
 }

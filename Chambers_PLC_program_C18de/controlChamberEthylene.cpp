@@ -20,7 +20,7 @@ controlChamberEthylene::controlChamberEthylene(ModbusTCPServer *modbusTCPServer,
 //-----------------
 int mConts =CONST_NORMALIZATION_ETHYLENE_PID;
   _mapsensor = new mapsensor(_modbusTCPServer,
-                        addressOffset + 262,            // C2h4 Measure
+                        addressOffset + 343,            // C2h4 Measure
                         addressOffset + 83,             // LowLimit1
                         addressOffset + 84,             // HighLimit1
                         addressOffset + 85,             // zeroSensor1
@@ -158,6 +158,7 @@ void controlChamberEthylene::alarm(){
 
 void controlChamberEthylene::readEthylene(double medidaSensor){
   _mapsensor->mapFloatMeasurementSensor(medidaSensor);
+  _mapsensor->mapFloatLimitadorEthyleno(addressOffset + 262, addressOffset + 359, 100.0);
   valueEthyleneNormalization = _mapsensor->getValueSensorNormaliced();
   calculatedSensorValues = _mapsensor->getValueSensor();
 }

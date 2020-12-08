@@ -25,6 +25,10 @@ public:
     double getValueSensor();
     double getValueSensorNormaliced();
 
+    void mapFloatLimitador(int addrMeasureLimit);
+
+    void mapFloatLimitadorEthyleno(int addrMeasureLimit,int addrLimitMin, double ponderator);
+
     ~mapsensor();
 private:
 

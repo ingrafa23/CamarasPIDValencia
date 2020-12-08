@@ -62,11 +62,13 @@ class Chamber
   controlChamberTemperature* _controlChamberTemperature;
     
     ModbusTCPServer* _modbusTCPServer;
-    ModbusTCPClient* _modbusTCPClient1;
-    ModbusTCPClient* _modbusTCPClient2;
-    ModbusTCPClient* _modbusTCPClient3;
-    ModbusTCPClient* _modbusTCPClient4;
-    ModbusTCPClient* _modbusTCPClient5;
+    ModbusTCPClient* _modbusTCPClient1; // es una carta de entrada
+    ModbusTCPClient* _modbusTCPClient2; // es la carta de las salidas
+
+    ModbusTCPClient* _modbusTCPAnalogInputClient2; // es una carta de entrada
+    ModbusTCPClient* _modbusTCPAnalogInputClient3; // es una carta de entrada
+    ModbusTCPClient* _modbusTCPAnalogInputClient4; // es una carta de entrada
+    ModbusTCPClient* _modbusTCPAnalogInputClient5; // es una carta de entrada
    
     int _chamber;
     int addressOffset;
@@ -133,13 +135,14 @@ class Chamber
   public:
 
     Chamber(int chamber,
-            ModbusTCPServer* modbusTCPServer,
-            ModbusTCPClient* modbusTCPClient1,
-            ModbusTCPClient* modbusTCPClient2,
-            ModbusTCPClient* modbusTCPClient3,
-            ModbusTCPClient* modbusTCPClient4,
-            ModbusTCPClient* modbusTCPClient5,
-            int &holdingRegisterPerChamber);
+                 ModbusTCPServer *modbusTCPServer,
+                 ModbusTCPClient *modbusTCPClient1,
+                 ModbusTCPClient *modbusTCPAnalogInputClient2,
+                 ModbusTCPClient *modbusTCPAnalogInputClient3,
+                 ModbusTCPClient *modbusTCPAnalogInputClient4,
+                 ModbusTCPClient *modbusTCPAnalogInputClient5,
+                 ModbusTCPClient *modbusTCPClient2,
+                 int &holdingRegisterPerChamber);
     void init();
 
     void writeToEeprom();

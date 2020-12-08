@@ -53,6 +53,46 @@ void mapsensor::mapFloatMeasurementSensorInt(int rawValueInputModule /*lectura d
     valueNormalization = calculatedSensorValues / constNormalizacion;
 }
 
+void mapsensor::mapFloatLimitador(int addrMeasureLimit){
+    if (calculatedSensorValues > _modbusTCPServer->holdingRegisterRead(addrspanSensor1))
+    {
+        calculatedSensorValues = _modbusTCPServer->holdingRegisterRead(addrspanSensor1);
+    }
+    else
+    {
+        if (calculatedSensorValues < _modbusTCPServer->holdingRegisterRead(addrzeroSensor1))
+        {
+            calculatedSensorValues = _modbusTCPServer->holdingRegisterRead(addrzeroSensor1);
+        }
+    }
+
+    _modbusTCPServer->holdingRegisterWriteFloat(addrMeasureLimit, calculatedSensorValues);
+    valueNormalization = calculatedSensorValues / constNormalizacion; 
+}
+
+void mapsensor::mapFloatLimitadorEthyleno(int addrMeasureLimit,int addrLimitMin, double ponderator){
+
+    if (calculatedSensorValues > _modbusTCPServer->holdingRegisterRead(addrspanSensor1))
+    {
+        calculatedSensorValues = _modbusTCPServer->holdingRegisterRead(addrspanSensor1);
+    }
+    else
+    {
+        double condition = (double)(_modbusTCPServer->holdingRegisterRead(addrLimitMin));
+        condition = condition / ponderator; 
+        if (calculatedSensorValues < condition )
+        {
+            calculatedSensorValues = _modbusTCPServer->holdingRegisterRead(addrzeroSensor1);
+        }
+    }
+
+    _modbusTCPServer->holdingRegisterWriteFloat(addrMeasureLimit, calculatedSensorValues);
+    valueNormalization = calculatedSensorValues / constNormalizacion; 
+}
+
+
+
+
 double mapsensor::getValueSensor(){
     return calculatedSensorValues;
 }
