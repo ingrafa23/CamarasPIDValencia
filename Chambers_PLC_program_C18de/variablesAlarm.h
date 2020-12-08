@@ -17,12 +17,12 @@ extern bool flagTimerAlarmNoVentilationPointer;
 // variables alarm open door 01
 #define VALUE_DOOR_1                 digitalRead(DOOR_1_OPEN_DETECT)
 #define MAX_TIME_OPEN_DOOR_1         _modbusTCPServer->holdingRegisterRead(addressOffset + 72)
-extern bool flagTimerOpenDoorTimeAlarm1Pointer;
+
 
 // variables alarm open door 01
 #define VALUE_DOOR_2                 digitalRead(DOOR_2_OPEN_DETECT)
 #define MAX_TIME_OPEN_DOOR_2         _modbusTCPServer->holdingRegisterRead(addressOffset + 73)
-extern bool flagTimerOpenDoorTimeAlarm2Pointer;
+
 
 
 

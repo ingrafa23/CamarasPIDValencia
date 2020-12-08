@@ -82,9 +82,10 @@ private:
 public:
     controlchamberco2(ModbusTCPServer *modbusTCPServer,int maddressOffset);
     void setup();
-    void run(double medidaSendor);
+    void run(double medidaSendor,bool flagActivadoresVentiladoresBarrido);
     void enable();
-    void forced();
+    //El barrio y el forzado por Hr se hace en la misma funcion
+    void forced(bool flagActivadoresVentiladoresBarrido);
     void alarm();
     void writeIO();
     bool getAlarmOnGeneral();

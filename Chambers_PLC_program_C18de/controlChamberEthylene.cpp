@@ -302,6 +302,12 @@ void controlChamberEthylene::run(double medidaSensor){
     //----------------
 }
 
+//Devueleve el valor de la medida de Etileno
+
+double controlChamberEthylene::getValueEthylene(){
+    return analogOutputModule1Values.flag;
+}
+
 
 bool controlChamberEthylene::getAlarmOnGeneral(){
     return alarmOnGeneral;

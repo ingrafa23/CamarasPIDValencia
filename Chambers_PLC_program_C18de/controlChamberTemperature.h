@@ -50,7 +50,9 @@ private:
     void debugControlTemperature();
 
    
-
+    double temperaturaExterior;
+    bool activadoresVentiladores;
+     bool flagReturnActivadoresVentiladores;
     
     
 
@@ -58,7 +60,9 @@ private:
 public:
     controlChamberTemperature(ModbusTCPServer *modbusTCPServer,int maddressOffset);
     void setup();
-    void run(double medidaSensor,bool autoSelectorValue);
+    void run(double medidaSensor,bool autoSelectorValue,double valorTemperaturaExterior,bool flagActivadoresVentiladores);
+    void barrido();
+    bool getForceVentiladores();
     void enable();
     void forced();
     void alarm();

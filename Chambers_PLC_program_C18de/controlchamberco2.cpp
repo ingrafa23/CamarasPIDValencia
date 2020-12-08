@@ -286,26 +286,26 @@ void controlchamberco2::enable(){
   }
 }
 
-void controlchamberco2::forced(){
-  if (FORCED_INPUT_FAN_1)
+void controlchamberco2::forced(bool flagActivadoresVentiladoresBarrido){
+  if (FORCED_INPUT_FAN_1  || flagActivadoresVentiladoresBarrido)
   {
     controlChamberCo2IO.inputFan1 = 1;
     analogOutputModule1ValuesCo2[0]= CO2_PID_OPEN;
   }
 
-  if (FORCED_OUTPUT_FAN_1)
+  if (FORCED_OUTPUT_FAN_1 || flagActivadoresVentiladoresBarrido)
   {
     controlChamberCo2IO.outputFan1 = 1;
     analogOutputModule1ValuesCo2[1]= CO2_PID_OPEN;
   }
 
-  if (FORCED_INPUT_FAN_2)
+  if (FORCED_INPUT_FAN_2 || flagActivadoresVentiladoresBarrido)
   {
     controlChamberCo2IO.inputFan2 = 1;
     analogOutputModule1ValuesCo2[0]= CO2_PID_OPEN;
   }
 
-  if (FORCED_OUTPUT_FAN_2)
+  if (FORCED_OUTPUT_FAN_2 || flagActivadoresVentiladoresBarrido)
   {
     controlChamberCo2IO.outputFan2 = 1;
     analogOutputModule1ValuesCo2[1]= CO2_PID_OPEN;
@@ -365,13 +365,13 @@ void controlchamberco2::stateIndicator(){
 
 
 
-void controlchamberco2::run(double medidaSendor){
+void controlchamberco2::run(double medidaSendor, bool flagActivadoresVentiladoresBarrido){
 
     this->readCO2(medidaSendor);
     this->alarm(); //aqui puede haber un error pero no se
     this->CO2Control();
     this->enable();
-    this->forced();
+    this->forced(flagActivadoresVentiladoresBarrido);
     this->writeIO();
     this->stateIndicator();
 

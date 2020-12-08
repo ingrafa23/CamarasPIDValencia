@@ -77,6 +77,16 @@ class Chamber
     int numEepromAddresses = 500;
       
     int analogOutputModule1Values[4];
+
+    //-----------------------------------
+    //Tarea 14 Barrido
+    //El barrido involucra tres procesos, Ethileno, temperatura y C02
+
+    double valorTemperaturaExterior;
+    bool ActivadorBarridoHolderRegister;
+    bool estadoAnteriosBarridoHolderRegister;
+
+    bool flagActivadoresVentiladores;
     
     //-------------------------------------------
     //---
@@ -205,6 +215,9 @@ class Chamber
     void setupSafetyRelayReset();
     //---------> Tarea 11
     void stateAutoTelSelector();
+
+    //------Tarea 14 Barrido
+    void barrido();
 
     //----------> Tarea 17
     // indicadoresEstados es la funcion encargada de verficar las Salidas digitales 

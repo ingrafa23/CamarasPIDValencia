@@ -33,21 +33,70 @@ void controlChamberTemperature::setup(){
  * @brief run es la funcion principal que ejecuta todo el sistema de control de temperatura
  * @param medidaSensor es el valor de la medida del sensor
  * @param autoSelectorValue habilita el control de temperatura
+ * @param valorTemperaturaExterior valor de la temperatura exterior
+ *  @param flagActivadoresVentiladores activador para el proceso de barrido y compensacion por diferencia de temperatura
 
 */
 
-void controlChamberTemperature::run(double medidaSensor,bool autoSelectorValue){
-    this->readTemperature(medidaSensor);
-    this->alarm();
-    this->TemperatureControl(autoSelectorValue);
-    this->enable();
-    this->forced();
-    this->writeIO();
-    this->stateIndicator();
+void controlChamberTemperature::run(double medidaSensor,bool autoSelectorValue,double valorTemperaturaExterior,bool flagActivadoresVentiladores){
+  temperaturaExterior = valorTemperaturaExterior;
+  activadoresVentiladores = flagActivadoresVentiladores;
+  this->readTemperature(medidaSensor);
+  this->alarm();
+  this->TemperatureControl(autoSelectorValue);
+  this->barrido();
+  this->enable();
+  this->forced();
+  this->writeIO();
+  this->stateIndicator();
 
-    this->debugControlTemperature();
+  this->debugControlTemperature();
 
     
+}
+
+void controlChamberTemperature::barrido(){
+  
+  flagReturnActivadoresVentiladores = activadoresVentiladores; 
+
+  if (!activadoresVentiladores)
+  {
+    double tempSetpoin = _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 16);
+    //calculatedSensorValues es la temperatura interior
+    if ((tempSetpoin < calculatedSensorValues) && ((temperaturaExterior + 1) < calculatedSensorValues))
+    {
+      if (!timerActivarExtractoresTemperatura.flag)
+      {
+        timerActivarExtractoresTemperatura.time = _modbusTCPServer->holdingRegisterRead(addressOffset + 363);
+        timerActivarExtractoresTemperatura.flag = 1;
+      }
+
+      //Activa los ventiladores pot 7500ms
+      if (timerActivarExtractoresTemperatura.time > 0)
+      {
+        controlChamberTemperatureIO.ControlCoolingRequest = 1;
+        flagReturnActivadoresVentiladores = 1;
+      }
+      else
+      {
+         timerActivarExtractoresTemperatura.flag = 0;
+        flagReturnActivadoresVentiladores = 0;
+        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 12);
+      }
+    }
+    else
+      {
+         timerActivarExtractoresTemperatura.flag= 0;
+        flagReturnActivadoresVentiladores = 0;
+        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 12);
+      }
+  }
+  
+}
+
+//Retorna la condicion de forzado de ventiladores por barrido
+bool controlChamberTemperature::getForceVentiladores(){
+  return flagReturnActivadoresVentiladores;
 }
 
 void controlChamberTemperature::enable(){

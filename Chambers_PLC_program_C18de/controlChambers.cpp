@@ -19,6 +19,45 @@ unsigned int TimeGases;
 
 struct strHoldingRegisterControlEnable holdingRegisterControlEnable;
 
+//Barrido
+
+void Chamber::barrido(){
+
+bool estadoActualBarridoHolderRegister = _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1);
+
+  if (estadoActualBarridoHolderRegister != estadoAnteriosBarridoHolderRegister)
+  {
+    if (estadoAnteriosBarridoHolderRegister)
+    {
+      ActivadorBarridoHolderRegister = 1;
+    }
+    if (estadoActualBarridoHolderRegister)
+    {
+      ActivadorBarridoHolderRegister = 0;
+    }
+  }
+
+
+  if (ActivadorBarridoHolderRegister)
+  {
+    if (_modbusTCPServer->holdingRegisterReadBit(addressOffset + 338, 11))
+    {
+      
+      if (_controlChamberEthylene->getValueEthylene() > _modbusTCPServer->holdingRegisterReadFloat(addressOffset + 361))
+      {
+        //Activamos los ventiladores
+        flagActivadoresVentiladores = 1;
+      }
+      else
+      {
+        flagActivadoresVentiladores = 0;
+      }
+    }
+  }
+
+
+}
+
 //--------------------------------------
 /* falta para implementar
 //------controlchamber.cpp --> barrido-------
@@ -204,11 +243,18 @@ _mapsensorReadPresionAire= new mapsensor(_modbusTCPServer,
   _controlChamberEthylene = new controlChamberEthylene(_modbusTCPServer,addressOffset);
   _controlChamberEthyleneFlow = new controlChamberEthyleneFlow(_modbusTCPServer,addressOffset);
   _controlChamberTemperature = new controlChamberTemperature(_modbusTCPServer,addressOffset);
+
   
 }
 
 void Chamber::init()
 {
+
+  //Tarea 14
+  //------------------------Barrido-------------------------------
+  estadoAnteriosBarridoHolderRegister = _modbusTCPServer->holdingRegisterReadBit(addressOffset + 0, 1);
+
+  //----------------------------------
   
   //inicializo los timer de alamr a de puertas y ventilador 
 
@@ -272,6 +318,7 @@ void Chamber::pinzasConsumo(){
 void Chamber::temperaturaExterior(){
   _mapsensorReadTemperaturaExterio->mapFloatMeasurementSensor(readsensorInput2->getValueSensor(3));
   _mapsensorReadTemperaturaExterio->mapFloatLimitador(addressOffset + 272);
+  valorTemperaturaExterior = _mapsensorReadTemperaturaExterio->getValueSensor();
 }
 
 //-------------
@@ -333,10 +380,10 @@ void Chamber::run(){
   this->presionAire();
   this->pinzasConsumo();
 
-  //falta alarmas
-
-  //run del control CO2
-  _controlchamberco2->run(readsensorInput1->getValueSensor(rawValueInputModule1Co2));
+  //alarmas
+  this->alarms();
+  
+  //El sistema de control de complir este orden
   //run del control humidity
   _controlchambershumidity->run(readsensorInput1->getValueSensor(rawValueInputModule1Hum),autoSelectorValue);
   // run del control de ehtylene
@@ -344,8 +391,15 @@ void Chamber::run(){
   // run control de ethylene flow
   _controlChamberEthyleneFlow->run(analogRead(ETHYLENE_FLOW_IN),_controlchamberco2->getAnalogOutputModule1ValuesCo2(0),
                               _controlchamberco2->getAnalogOutputModule1ValuesCo2(1),_controlchamberco2->getMinCo2());
+  
+  //Barrido
+  this->botellaEtileno();
   // run control de temperatura
-  _controlChamberTemperature->run(readsensorInput1->getValueSensor(rawValueInputModule1Temp),autoSelectorValue);                         
+  _controlChamberTemperature->run(readsensorInput1->getValueSensor(rawValueInputModule1Temp),autoSelectorValue,valorTemperaturaExterior,flagActivadoresVentiladores);
+   //Solicito el flag de activar ventiladores por barrido
+   flagActivadoresVentiladores = _controlChamberTemperature->getForceVentiladores();
+  //run del control CO2
+  _controlchamberco2->run(readsensorInput1->getValueSensor(rawValueInputModule1Co2),flagActivadoresVentiladores);                        
 
   //habilitadores
   this->enable();
@@ -789,6 +843,8 @@ void Chamber::stateAutoTelSelector(){
     CLEAR_AUTOTEL_SELECTOR_HR;
   }
 }
+
+
 
 
 

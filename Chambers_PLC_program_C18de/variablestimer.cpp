@@ -34,6 +34,14 @@ int timerAlarmNoVentilation = 0;
 int timerOpenDoorTimeAlarm1 = 0;
 int timerOpenDoorTimeAlarm2 = 0;
 
+//-----------Timer activar extractores por temperatura
+struct strTimerExtrActTemp timerActivarExtractoresTemperatura = {0,0};
+
+// variables alarm open door 01
+bool flagTimerOpenDoorTimeAlarm1Pointer;
+// variables alarm open door 01
+bool flagTimerOpenDoorTimeAlarm2Pointer;
+
 
 void setTimerIntEthyleneFlow(unsigned long v){
     timerInyectionEthyleneFlow.timerInit = v;

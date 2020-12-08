@@ -59,6 +59,22 @@ extern int timerAlarmNoVentilation;
 extern int timerOpenDoorTimeAlarm1;
 extern int timerOpenDoorTimeAlarm2;
 
+//-----------Timer activar extractores por temperatura
+struct strTimerExtrActTemp
+{
+  unsigned int time;
+  bool flag;
+};
+
+extern struct strTimerExtrActTemp timerActivarExtractoresTemperatura;
+
+// variables alarm open door 01
+extern bool flagTimerOpenDoorTimeAlarm1Pointer;
+
+// variables alarm open door 01
+extern bool flagTimerOpenDoorTimeAlarm2Pointer;
+
+//------------------------------------------------
 
 extern struct structMicroCut timerMicroCut;
 extern struct structTimer timerInyectionEthyleneFlow;

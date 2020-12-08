@@ -78,6 +78,8 @@ public:
     void forced();
     void alarm();
     bool getAlarmOnGeneral();
+
+    double getValueEthylene();
     
     //Control PID de ethyleneControl
     void ethyleneControl();

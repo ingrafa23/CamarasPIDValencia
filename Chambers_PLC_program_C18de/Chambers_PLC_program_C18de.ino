@@ -437,6 +437,13 @@ ISR(TIMER5_OVF_vect)
     timerMicroCut.timer03--;
   }
 
+  //-----------Timer activar extractores por temperatura Barrido
+  if (timerActivarExtractoresTemperatura.time > 0)
+  {
+    timerActivarExtractoresTemperatura.time--;
+  }
+  
+
   //-----------------------------------------------
   
 
