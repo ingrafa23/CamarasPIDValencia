@@ -81,14 +81,14 @@ void controlChamberTemperature::barrido(){
       {
          timerActivarExtractoresTemperatura.flag = 0;
         flagReturnActivadoresVentiladores = 0;
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 12);
+        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 11);
       }
     }
     else
       {
          timerActivarExtractoresTemperatura.flag= 0;
         flagReturnActivadoresVentiladores = 0;
-        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 12);
+        _modbusTCPServer->holdingRegisterClearBit(addressOffset + 338, 11);
       }
   }
   
